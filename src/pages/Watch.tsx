@@ -279,7 +279,7 @@ export default function Watch() {
               };
             };
             CastContextEventType: { CAST_STATE_CHANGED: string };
-            CastState: { NO_DEVICES_AVAILABLE: string };
+            CastState: { NO_DEVICES_AVAILABLE: string; CONNECTED: string };
           };
         };
         chrome: {
@@ -292,9 +292,6 @@ export default function Watch() {
       try {
         const ctx = w.cast.framework.CastContext.getInstance();
         ctx.setOptions({
-          // CC1AD845 = the official Default Media Receiver (CAF). Handles
-          // HLS with fMP4 segments correctly — the previous "default" constant
-          // sometimes resolved to a styled receiver that played audio only.
           receiverApplicationId: "CC1AD845",
           autoJoinPolicy: w.chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
         });
@@ -302,6 +299,7 @@ export default function Watch() {
         const update = () => {
           const state = ctx.getCastState();
           setCastReady(state !== w.cast.framework.CastState.NO_DEVICES_AVAILABLE);
+          setIsCasting(state === w.cast.framework.CastState.CONNECTED);
         };
         const onStateChange = () => update();
         ctx.addEventListener(
