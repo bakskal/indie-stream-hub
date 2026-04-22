@@ -65,30 +65,38 @@ const Index = () => {
               )}
             </div>
 
-            {/* Trailer */}
+            {/* Trailer — falls back to the canonical YouTube trailer if the DB hasn't been seeded yet */}
             <div className="rounded-xl overflow-hidden border border-white/15 shadow-card bg-black/30">
               <div className="aspect-video">
-                {film?.trailer_stream_id?.startsWith("youtube:") ? (
-                  <iframe
-                    src={`https://www.youtube-nocookie.com/embed/${film.trailer_stream_id.slice("youtube:".length)}?rel=0&modestbranding=1`}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                    className="w-full h-full"
-                    title={`${film.title} trailer`}
-                  />
-                ) : film?.trailer_stream_id ? (
-                  <iframe
-                    src={`https://iframe.videodelivery.net/${film.trailer_stream_id}`}
-                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-                    allowFullScreen
-                    className="w-full h-full"
-                    title={`${film.title} trailer`}
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-white/60 text-sm">
-                    Trailer loading…
-                  </div>
-                )}
+                {(() => {
+                  const fallbackYouTubeId = "xPK_ScLIAxQ";
+                  const ytId = film?.trailer_stream_id?.startsWith("youtube:")
+                    ? film.trailer_stream_id.slice("youtube:".length)
+                    : !film?.trailer_stream_id
+                      ? fallbackYouTubeId
+                      : null;
+
+                  if (ytId) {
+                    return (
+                      <iframe
+                        src={`https://www.youtube-nocookie.com/embed/${ytId}?rel=0&modestbranding=1`}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                        className="w-full h-full"
+                        title={`${film?.title ?? "Mr. Paanwala"} trailer`}
+                      />
+                    );
+                  }
+                  return (
+                    <iframe
+                      src={`https://iframe.videodelivery.net/${film!.trailer_stream_id}`}
+                      allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                      allowFullScreen
+                      className="w-full h-full"
+                      title={`${film!.title} trailer`}
+                    />
+                  );
+                })()}
               </div>
             </div>
           </div>

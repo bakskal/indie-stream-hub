@@ -208,12 +208,13 @@ CREATE POLICY "Admins can update subscribers"
 -- ---- Seed the film row ----
 -- IMPORTANT: replace feature_stream_id / trailer_stream_id with the real
 -- Cloudflare Stream UIDs after upload.
-INSERT INTO public.films (title, tagline, synopsis, runtime_seconds, price_cents, currency)
+INSERT INTO public.films (title, tagline, synopsis, runtime_seconds, price_cents, currency, trailer_stream_id)
 VALUES (
   'Mr. Paanwala',
   'A Vijay Bhola film.',
-  'Replace this synopsis. Placeholder so the landing page renders before the real assets are uploaded.',
+  'Mr. Paanwala addresses the immigrant diaspora that struggles to define a new identity for themselves as they face the dilemma of progressing in the new environment and the one they grew up in. A story about love, family, career, marriage, and finding your true self.',
   5400,
   500,
-  'usd'
+  'usd',
+  'youtube:xPK_ScLIAxQ'
 );
