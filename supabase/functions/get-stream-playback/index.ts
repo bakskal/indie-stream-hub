@@ -76,6 +76,7 @@ Deno.serve(async (req) => {
     }
 
     const film = purchase.films as {
+      id: string;
       title: string;
       video_asset_id: string | null;
       thumbnail_url: string | null;
@@ -104,6 +105,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         title: film.title,
+        film_id: film.id,
         expires_at: purchase.expires_at,
         playback: {
           hls: hlsUrl,
