@@ -13,7 +13,7 @@ export default function About() {
       <main className="flex-1 container max-w-3xl py-10">
         <article className="rounded-3xl bg-white text-card-foreground shadow-card p-8 md:p-12">
           <h1 className="font-display text-4xl">Rock On Production</h1>
-          <p className="mt-6 text-muted-foreground leading-relaxed text-[15px]">
+          <p className="mt-6 text-card-foreground/75 leading-relaxed text-[15px]">
             Rock On Music is now moving to new heights under the visionary directorship of Mr. Vijay Bhola
             who has been the Producer of high end music concerts for 4 decades. British indian Director
             Vijay Bhola's vision now extends to a new genre of films embracing the intricacies of facing
@@ -37,7 +37,7 @@ export default function About() {
 
           <h2 className="font-display text-2xl mt-12">Meet the Director</h2>
           <div className="mt-5 rounded-2xl overflow-hidden bg-muted aspect-video flex items-center justify-center">
-            <div className="text-center text-muted-foreground text-sm px-6">
+            <div className="text-center text-card-foreground/60 text-sm px-6">
               Director video coming soon
             </div>
           </div>

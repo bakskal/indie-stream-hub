@@ -89,7 +89,7 @@ const Index = () => {
             <div className="grid md:grid-cols-[1fr_320px] gap-8 items-start">
               <div>
                 <h2 className="font-display text-4xl">{film?.title ?? "Mr. Paanwala"}</h2>
-                <p className="mt-5 text-muted-foreground leading-relaxed text-[15px]">
+                <p className="mt-5 text-card-foreground/75 leading-relaxed text-[15px]">
                   {film?.description ??
                     "Mr. Paanwala addresses the immigrant diaspora that struggles to define a new identity for themselves as they face the dilemma of progressing in the new environment and the one they grew up in. Mr. Paanwala is a story about love, family, career, marriage, and finding your true self. It explores the contrast between Lucknow's culture and the London lifestyle. Rooted and authentic, the film features outstanding theatre actors delivering powerful performances."}
                 </p>
