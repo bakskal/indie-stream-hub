@@ -74,6 +74,11 @@ serve(async (req) => {
       customer_email: customerId ? undefined : user.email,
       line_items: [{ price: film.stripe_price_id, quantity: 1 }],
       mode: "payment",
+      // Restrict checkout to plain card + Link only.
+      // Apple Pay / Google Pay / Amazon Pay etc. are wallet variants of "card"
+      // — disabling them in the Stripe Dashboard's Payment Methods settings
+      // is the supported way; here we also explicitly pin the method types.
+      payment_method_types: ["card", "link"],
       success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/checkout/cancel`,
       metadata: {
