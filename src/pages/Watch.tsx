@@ -101,7 +101,10 @@ export default function Watch() {
   const [airplayAvailable, setAirplayAvailable] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [chromeVisible, setChromeVisible] = useState(true);
+  const [androidHelperOpen, setAndroidHelperOpen] = useState(false);
   const [, force] = useState(0);
+
+  const platform = useMemo(() => detectPlatform(), []);
 
   const lastSavedRef = useRef(0);
   const featureStartedRef = useRef(false);
