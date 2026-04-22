@@ -350,7 +350,7 @@ export default function Watch() {
       webkitShowPlaybackTargetPicker?: () => void;
     }) | null;
 
-    // Prefer AirPlay on Safari
+    // Prefer AirPlay on Safari (its picker handles connect AND disconnect)
     if (video && typeof video.webkitShowPlaybackTargetPicker === "function") {
       try {
         video.webkitShowPlaybackTargetPicker();
@@ -365,6 +365,7 @@ export default function Watch() {
           CastContext: {
             getInstance: () => {
               requestSession: () => Promise<unknown>;
+              endCurrentSession: (stopCasting: boolean) => void;
               getCurrentSession: () => null | {
                 loadMedia: (req: unknown) => Promise<unknown>;
               };
@@ -393,8 +394,20 @@ export default function Watch() {
     };
     if (!w.cast || !w.chrome) return;
 
+    const ctx = w.cast.framework.CastContext.getInstance();
+
+    // Already casting? Stop and return control to the local player.
+    if (isCasting) {
+      try {
+        ctx.endCurrentSession(true);
+        videoRef.current?.play().catch(() => {/* user gesture may be needed */});
+      } catch (err) {
+        console.error("Stop cast failed", err);
+      }
+      return;
+    }
+
     try {
-      const ctx = w.cast.framework.CastContext.getInstance();
       let session = ctx.getCurrentSession();
       if (!session) {
         await ctx.requestSession();
@@ -408,9 +421,6 @@ export default function Watch() {
       );
       mediaInfo.streamType = w.chrome.cast.media.StreamType.BUFFERED;
       // Cloudflare Stream serves HLS with fragmented MP4 segments.
-      // Without this hint the receiver falls back to a TS demuxer which
-      // can decode the audio track but drops the video — the exact
-      // "audio only on Chromecast" symptom.
       const fmp4 = w.chrome.cast.media.HlsSegmentFormat?.FMP4 ?? "fmp4";
       const fmp4v = w.chrome.cast.media.HlsVideoSegmentFormat?.FMP4 ?? "fmp4";
       mediaInfo.hlsSegmentFormat = fmp4;
@@ -427,7 +437,6 @@ export default function Watch() {
       req.currentTime = videoRef.current ? Math.floor(videoRef.current.currentTime) : 0;
       req.autoplay = true;
 
-      // Pause local playback while casting
       videoRef.current?.pause();
       await session.loadMedia(req);
     } catch (err) {
