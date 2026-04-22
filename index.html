@@ -23,6 +23,38 @@
     <meta name="twitter:title" content="Rock On Motion Pictures — Let There Be Light" />
     <meta name="twitter:description" content="Independent cinema, direct from the filmmakers." />
     <meta name="twitter:image" content="https://rockonmotionpictures.com/og-image.jpg" />
+
+    <!-- Speculation Rules API — enables Cloudflare Speed Brain & native browser prefetch
+         to instantly load same-origin links the user is likely to visit next. -->
+    <script type="speculationrules">
+      {
+        "prerender": [
+          {
+            "source": "document",
+            "where": { "and": [
+              { "href_matches": "/*" },
+              { "not": { "href_matches": "/logout" } },
+              { "not": { "href_matches": "/checkout/*" } },
+              { "not": { "href_matches": "/watch/*" } },
+              { "not": { "selector_matches": "[rel~=nofollow]" } },
+              { "not": { "selector_matches": ".no-prefetch" } }
+            ]},
+            "eagerness": "moderate"
+          }
+        ],
+        "prefetch": [
+          {
+            "source": "document",
+            "where": { "and": [
+              { "href_matches": "/*" },
+              { "not": { "href_matches": "/logout" } },
+              { "not": { "selector_matches": "[rel~=nofollow]" } }
+            ]},
+            "eagerness": "moderate"
+          }
+        ]
+      }
+    </script>
   </head>
 
   <body>
