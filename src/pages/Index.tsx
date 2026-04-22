@@ -63,7 +63,15 @@ const Index = () => {
         {/* Poster / Trailer */}
         <section className="container max-w-4xl pb-24">
           <div className="aspect-video rounded-lg overflow-hidden border border-border bg-surface relative shadow-elegant">
-            {film?.trailer_stream_id ? (
+            {film?.trailer_stream_id?.startsWith("youtube:") ? (
+              <iframe
+                src={`https://www.youtube-nocookie.com/embed/${film.trailer_stream_id.slice("youtube:".length)}?rel=0&modestbranding=1`}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                className="w-full h-full"
+                title={`${film.title} trailer`}
+              />
+            ) : film?.trailer_stream_id ? (
               <iframe
                 src={`https://iframe.videodelivery.net/${film.trailer_stream_id}`}
                 allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
