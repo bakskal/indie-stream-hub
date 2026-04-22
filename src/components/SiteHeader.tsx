@@ -9,7 +9,7 @@ export function SiteHeader() {
   const location = useLocation();
 
   const navItem = ({ isActive }: { isActive: boolean }) =>
-    `px-4 py-1.5 rounded-full text-sm transition ${
+    `px-2.5 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm whitespace-nowrap transition ${
       isActive ? "bg-white/15 text-white" : "text-white/80 hover:text-white"
     }`;
 
