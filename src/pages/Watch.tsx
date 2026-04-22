@@ -344,9 +344,18 @@ export default function Watch() {
     }) | null;
     if (!video) return;
     if (typeof video.webkitShowPlaybackTargetPicker !== "function") return;
+
+    // On iOS the availability event is unreliable (often only fires after the
+    // picker is opened). Surface the AirPlay button immediately so users on
+    // iPhone/iPad can reach it; iOS handles "no devices" with its own UI.
+    if (platform.isIOS) {
+      setAirplayAvailable(true);
+    }
+
     const onChange = (e: Event) => {
       const detail = (e as unknown as { availability?: string }).availability;
-      setAirplayAvailable(detail === "available");
+      if (detail === "available") setAirplayAvailable(true);
+      else if (!platform.isIOS) setAirplayAvailable(false);
     };
     video.addEventListener(
       "webkitplaybacktargetavailabilitychanged" as keyof HTMLVideoElementEventMap,
@@ -358,7 +367,7 @@ export default function Watch() {
         onChange as EventListener,
       );
     };
-  }, [playback]);
+  }, [playback, platform.isIOS]);
 
   const handleCastClick = async () => {
     if (!playback) return;
