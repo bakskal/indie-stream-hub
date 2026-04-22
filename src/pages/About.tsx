@@ -1,10 +1,33 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import Hls from "hls.js";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 
+const DIRECTOR_VIDEO_URL =
+  "https://customer-mkfuixutdaumge7k.cloudflarestream.com/4be5dc65049f358e6044433e3c2e44f6/manifest/video.m3u8";
+
 export default function About() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
   useEffect(() => {
     document.title = "About — Rock On Motion Pictures";
+  }, []);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = DIRECTOR_VIDEO_URL;
+      return;
+    }
+
+    if (Hls.isSupported()) {
+      const hls = new Hls();
+      hls.loadSource(DIRECTOR_VIDEO_URL);
+      hls.attachMedia(video);
+      return () => hls.destroy();
+    }
   }, []);
 
   return (
@@ -12,7 +35,7 @@ export default function About() {
       <SiteHeader />
       <main className="flex-1 container max-w-3xl py-10">
         <article className="rounded-3xl bg-white text-card-foreground shadow-card p-8 md:p-12">
-          <h1 className="font-display text-4xl">Rock On Production</h1>
+          <h1 className="font-display text-4xl">Rock On Motion Pictures</h1>
           <p className="mt-6 text-card-foreground/75 leading-relaxed text-[15px]">
             Rock On Music is now moving to new heights under the visionary directorship of Mr. Vijay Bhola
             who has been the Producer of high end music concerts for 4 decades. British indian Director
@@ -36,10 +59,14 @@ export default function About() {
           </p>
 
           <h2 className="font-display text-2xl mt-12">Meet the Director</h2>
-          <div className="mt-5 rounded-2xl overflow-hidden bg-muted aspect-video flex items-center justify-center">
-            <div className="text-center text-card-foreground/60 text-sm px-6">
-              Director video coming soon
-            </div>
+          <div className="mt-5 rounded-2xl overflow-hidden bg-muted aspect-video">
+            <video
+              ref={videoRef}
+              controls
+              playsInline
+              preload="metadata"
+              className="w-full h-full object-cover"
+            />
           </div>
         </article>
       </main>

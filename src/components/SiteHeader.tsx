@@ -57,7 +57,7 @@ export function SiteHeader() {
         {/* Right actions */}
         <div className="flex items-center gap-3">
           <a
-            href="https://facebook.com"
+            href="https://www.facebook.com/rockonmotionpictures"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Facebook"
