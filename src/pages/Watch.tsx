@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Hls from "hls.js";
+import { Cast } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -22,10 +23,14 @@ interface PlaybackResponse {
 const INTRO_HLS_URL =
   "https://customer-mkfuixutdaumge7k.cloudflarestream.com/1925d62638d9857ea616d7bf92e3261c/manifest/video.m3u8";
 
-// If the saved progress is within this many seconds of the start or end,
-// don't bother resuming — start fresh / treat as finished.
+// Resume only kicks in after this many seconds of saved progress.
+// Below this, we treat the rental as "starting from the beginning".
 const RESUME_THRESHOLD_SECONDS = 5;
 const PROGRESS_SAVE_INTERVAL_MS = 5_000;
+
+const SUPABASE_URL = "https://dhbyembenuuscgqwbpwq.supabase.co";
+const SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRoYnllbWJlbnV1c2NncXdicHdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MjcyMDgsImV4cCI6MjA5MjAwMzIwOH0.mSMwZGiTfi__Pf53xD09Fa9Vsv-1G6FG81IZUP5kx4k";
 
 function formatRemaining(expiresAt: string): string {
   const ms = new Date(expiresAt).getTime() - Date.now();
@@ -48,6 +53,29 @@ function attachHls(video: HTMLVideoElement, src: string): Hls | null {
   return null;
 }
 
+// ---- Cast (Chromecast) ----
+// Loads the Google Cast Sender SDK once and resolves when the framework is ready.
+let castSdkPromise: Promise<boolean> | null = null;
+function loadCastSdk(): Promise<boolean> {
+  if (castSdkPromise) return castSdkPromise;
+  castSdkPromise = new Promise((resolve) => {
+    const w = window as unknown as {
+      cast?: { framework?: unknown };
+      __onGCastApiAvailable?: (available: boolean) => void;
+    };
+    if (w.cast?.framework) return resolve(true);
+    w.__onGCastApiAvailable = (available: boolean) => resolve(available);
+    const script = document.createElement("script");
+    script.src = "https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1";
+    script.async = true;
+    script.onerror = () => resolve(false);
+    document.head.appendChild(script);
+    // Safety timeout
+    setTimeout(() => resolve(Boolean(w.cast?.framework)), 6000);
+  });
+  return castSdkPromise;
+}
+
 export default function Watch() {
   const { rentalId } = useParams<{ rentalId: string }>();
   const { user } = useAuth();
@@ -55,10 +83,11 @@ export default function Watch() {
   const [playback, setPlayback] = useState<PlaybackResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [phase, setPhase] = useState<"intro" | "feature">("intro");
+  const [phase, setPhase] = useState<"intro" | "feature">("feature");
+  const [castReady, setCastReady] = useState(false);
+  const [airplayAvailable, setAirplayAvailable] = useState(false);
   const [, force] = useState(0);
 
-  // Latest progress for the feature, used by the throttled saver and unload handler.
   const lastSavedRef = useRef(0);
   const featureStartedRef = useRef(false);
 
@@ -85,7 +114,7 @@ export default function Watch() {
     return () => { cancelled = true; };
   }, [rentalId]);
 
-  // Drive playback: intro first, then feature with resume seek + progress save.
+  // Drive playback: check saved progress first → intro only on fresh starts.
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !playback || !user) return;
@@ -97,7 +126,6 @@ export default function Watch() {
     const saveProgress = async (force = false) => {
       if (!featureStartedRef.current) return;
       const pos = Math.floor(video.currentTime);
-      // Only write if it actually moved (or a forced flush on unmount/pause)
       if (!force && pos === lastSavedRef.current) return;
       lastSavedRef.current = pos;
       await supabase
@@ -113,11 +141,11 @@ export default function Watch() {
         );
     };
 
-    const startFeature = async () => {
+    const startFeature = (resumeAt: number) => {
       if (cancelled) return;
       setPhase("feature");
 
-      // Detach intro source first
+      // Detach any prior source (intro)
       if (hls) {
         hls.destroy();
         hls = null;
@@ -125,59 +153,60 @@ export default function Watch() {
       video.removeAttribute("src");
       video.load();
 
-      // Look up saved progress
-      let resumeAt = 0;
-      const { data: history } = await supabase
-        .from("watch_history")
-        .select("progress_seconds")
-        .eq("user_id", user.id)
-        .eq("film_id", playback.film_id)
-        .maybeSingle();
-      if (history?.progress_seconds && history.progress_seconds > RESUME_THRESHOLD_SECONDS) {
-        resumeAt = history.progress_seconds;
-      }
       lastSavedRef.current = resumeAt;
-
       hls = attachHls(video, playback.playback.hls);
 
       const seekAndPlay = () => {
         if (cancelled) return;
         if (resumeAt > 0 && Number.isFinite(video.duration)) {
-          // Stay at least 5s from the end so we don't immediately fire 'ended'.
           video.currentTime = Math.min(resumeAt, Math.max(0, video.duration - 5));
         }
         featureStartedRef.current = true;
         video.play().catch(() => {/* user can press play */});
       };
 
-      if (video.readyState >= 1 /* HAVE_METADATA */) {
+      if (video.readyState >= 1) {
         seekAndPlay();
       } else {
         video.addEventListener("loadedmetadata", seekAndPlay, { once: true });
       }
 
-      // Periodic progress save while playing
       saveTimer = window.setInterval(() => {
         if (!video.paused && !video.ended) saveProgress();
       }, PROGRESS_SAVE_INTERVAL_MS);
     };
 
-    // Phase 1: play intro
-    setPhase("intro");
-    featureStartedRef.current = false;
-    hls = attachHls(video, INTRO_HLS_URL);
-    const onIntroEnded = () => { void startFeature(); };
-    video.addEventListener("ended", onIntroEnded);
-    video.play().catch(() => {/* autoplay may be blocked; user clicks play */});
+    const onIntroEnded = () => { startFeature(0); };
 
-    // Save on pause + tab close
+    // Decide intro vs. resume BEFORE attaching any source
+    (async () => {
+      const { data: history } = await supabase
+        .from("watch_history")
+        .select("progress_seconds")
+        .eq("user_id", user.id)
+        .eq("film_id", playback.film_id)
+        .maybeSingle();
+      if (cancelled) return;
+
+      const savedSeconds = history?.progress_seconds ?? 0;
+
+      if (savedSeconds > RESUME_THRESHOLD_SECONDS) {
+        // Resume — skip intro, jump straight into the feature
+        startFeature(savedSeconds);
+      } else {
+        // Fresh start — play intro, then feature from 0
+        setPhase("intro");
+        featureStartedRef.current = false;
+        hls = attachHls(video, INTRO_HLS_URL);
+        video.addEventListener("ended", onIntroEnded);
+        video.play().catch(() => {/* autoplay may be blocked */});
+      }
+    })();
+
     const onPause = () => { void saveProgress(true); };
     video.addEventListener("pause", onPause);
 
-    // Save on tab close — fire-and-forget keepalive POST so it lands even mid-navigation
-    const SUPABASE_URL = "https://dhbyembenuuscgqwbpwq.supabase.co";
-    const SUPABASE_ANON_KEY =
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRoYnllbWJlbnV1c2NncXdicHdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MjcyMDgsImV4cCI6MjA5MjAwMzIwOH0.mSMwZGiTfi__Pf53xD09Fa9Vsv-1G6FG81IZUP5kx4k";
+    // Fire-and-forget save on tab close
     let cachedToken: string | null = null;
     void supabase.auth.getSession().then(({ data }) => {
       cachedToken = data.session?.access_token ?? null;
@@ -212,21 +241,147 @@ export default function Watch() {
       video.removeEventListener("ended", onIntroEnded);
       video.removeEventListener("pause", onPause);
       if (saveTimer) clearInterval(saveTimer);
-      // Final save on unmount
       void saveProgress(true);
       if (hls) hls.destroy();
     };
   }, [playback, user]);
 
+  // ---- Cast init ----
+  useEffect(() => {
+    if (!playback) return;
+    let cancelled = false;
+    void loadCastSdk().then((ok) => {
+      if (cancelled || !ok) return;
+      const w = window as unknown as {
+        cast: {
+          framework: {
+            CastContext: {
+              getInstance: () => {
+                setOptions: (o: Record<string, unknown>) => void;
+              };
+            };
+            RemotePlayer: new () => unknown;
+            RemotePlayerController: new (p: unknown) => unknown;
+          };
+        };
+        chrome: { cast: { media: { DEFAULT_MEDIA_RECEIVER_APP_ID: string }; AutoJoinPolicy: { ORIGIN_SCOPED: string } } };
+      };
+      try {
+        w.cast.framework.CastContext.getInstance().setOptions({
+          receiverApplicationId: w.chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+          autoJoinPolicy: w.chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
+        });
+        setCastReady(true);
+      } catch {
+        // SDK not fully ready
+      }
+    });
+    return () => { cancelled = true; };
+  }, [playback]);
+
+  // ---- AirPlay availability (Safari only) ----
+  useEffect(() => {
+    const video = videoRef.current as (HTMLVideoElement & {
+      webkitShowPlaybackTargetPicker?: () => void;
+    }) | null;
+    if (!video) return;
+    if (typeof video.webkitShowPlaybackTargetPicker !== "function") return;
+    const onChange = (e: Event) => {
+      const detail = (e as unknown as { availability?: string }).availability;
+      setAirplayAvailable(detail === "available");
+    };
+    video.addEventListener(
+      "webkitplaybacktargetavailabilitychanged" as keyof HTMLVideoElementEventMap,
+      onChange as EventListener,
+    );
+    return () => {
+      video.removeEventListener(
+        "webkitplaybacktargetavailabilitychanged" as keyof HTMLVideoElementEventMap,
+        onChange as EventListener,
+      );
+    };
+  }, [playback]);
+
+  const handleCastClick = async () => {
+    if (!playback) return;
+    const video = videoRef.current as (HTMLVideoElement & {
+      webkitShowPlaybackTargetPicker?: () => void;
+    }) | null;
+
+    // Prefer AirPlay on Safari
+    if (video && typeof video.webkitShowPlaybackTargetPicker === "function") {
+      try {
+        video.webkitShowPlaybackTargetPicker();
+        return;
+      } catch {/* fall through to Chromecast */}
+    }
+
+    // Chromecast
+    const w = window as unknown as {
+      cast?: {
+        framework: {
+          CastContext: {
+            getInstance: () => {
+              requestSession: () => Promise<unknown>;
+              getCurrentSession: () => null | {
+                loadMedia: (req: unknown) => Promise<unknown>;
+              };
+            };
+          };
+        };
+      };
+      chrome?: {
+        cast: {
+          media: {
+            MediaInfo: new (url: string, contentType: string) => {
+              metadata?: unknown;
+            };
+            GenericMediaMetadata: new () => { title?: string };
+            LoadRequest: new (info: unknown) => { currentTime?: number };
+          };
+        };
+      };
+    };
+    if (!w.cast || !w.chrome) return;
+
+    try {
+      const ctx = w.cast.framework.CastContext.getInstance();
+      let session = ctx.getCurrentSession();
+      if (!session) {
+        await ctx.requestSession();
+        session = ctx.getCurrentSession();
+      }
+      if (!session) return;
+
+      const mediaInfo = new w.chrome.cast.media.MediaInfo(
+        playback.playback.hls,
+        "application/vnd.apple.mpegurl",
+      );
+      const meta = new w.chrome.cast.media.GenericMediaMetadata();
+      meta.title = playback.title;
+      mediaInfo.metadata = meta;
+
+      const req = new w.chrome.cast.media.LoadRequest(mediaInfo);
+      req.currentTime = videoRef.current ? Math.floor(videoRef.current.currentTime) : 0;
+
+      // Pause local playback while casting
+      videoRef.current?.pause();
+      await session.loadMedia(req);
+    } catch (err) {
+      console.error("Cast failed", err);
+    }
+  };
+
   useEffect(() => {
     if (playback?.title) document.title = `Watching ${playback.title} — Indie Reel`;
   }, [playback]);
 
-  // Tick countdown
   useEffect(() => {
     const id = setInterval(() => force((n) => n + 1), 30_000);
     return () => clearInterval(id);
   }, []);
+
+  const showCastButton = castReady || airplayAvailable;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -254,7 +409,20 @@ export default function Watch() {
                 </Link>
                 <h1 className="font-display text-2xl mt-1">{playback.title}</h1>
               </div>
-              <Badge>{formatRemaining(playback.expires_at)}</Badge>
+              <div className="flex items-center gap-2">
+                {showCastButton ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCastClick}
+                    title="Cast to a device on your network"
+                  >
+                    <Cast className="h-4 w-4 mr-2" />
+                    Cast
+                  </Button>
+                ) : null}
+                <Badge>{formatRemaining(playback.expires_at)}</Badge>
+              </div>
             </div>
             <div className="container max-w-6xl py-6">
               <div className="aspect-video rounded-lg overflow-hidden border border-border bg-black relative">
@@ -265,6 +433,7 @@ export default function Watch() {
                   playsInline
                   poster={phase === "feature" ? playback.playback.poster : undefined}
                   controlsList="nodownload"
+                  {...({ "x-webkit-airplay": "allow" } as Record<string, string>)}
                 />
                 {phase === "intro" ? (
                   <div className="absolute top-3 left-3 text-xs uppercase tracking-wider text-white/80 bg-black/40 backdrop-blur px-2 py-1 rounded">
@@ -274,6 +443,7 @@ export default function Watch() {
               </div>
               <p className="text-xs text-muted-foreground mt-3">
                 Streaming via Cloudflare. Time-limited to your rental window.
+                {showCastButton ? " Cast to your TV with the Cast button above." : ""}
               </p>
             </div>
           </>
