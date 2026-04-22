@@ -85,10 +85,13 @@ export default function Watch() {
   const [phase, setPhase] = useState<"intro" | "feature">("feature");
   const [castReady, setCastReady] = useState(false);
   const [airplayAvailable, setAirplayAvailable] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [chromeVisible, setChromeVisible] = useState(true);
   const [, force] = useState(0);
 
   const lastSavedRef = useRef(0);
   const featureStartedRef = useRef(false);
+  const hideTimerRef = useRef<number | null>(null);
 
   // Fetch playback URL (server verifies active rental)
   useEffect(() => {
