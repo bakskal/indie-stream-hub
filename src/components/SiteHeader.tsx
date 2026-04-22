@@ -48,7 +48,10 @@ export function SiteHeader() {
         {/* Nav pill */}
         <nav className="nav-pill">
           <NavLink to="/about" className={navItem}>About</NavLink>
-          <NavLink to="/press" className={navItem}>Press Release</NavLink>
+          <NavLink to="/press" className={navItem}>
+            <span className="sm:hidden">Press</span>
+            <span className="hidden sm:inline">Press Release</span>
+          </NavLink>
         </nav>
 
         {/* Right actions */}
