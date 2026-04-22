@@ -60,9 +60,9 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Trailer */}
+        {/* Poster / Trailer */}
         <section className="container max-w-4xl pb-24">
-          <div className="aspect-video rounded-lg overflow-hidden border border-border bg-surface relative">
+          <div className="aspect-video rounded-lg overflow-hidden border border-border bg-surface relative shadow-elegant">
             {film?.trailer_stream_id ? (
               <iframe
                 src={`https://iframe.videodelivery.net/${film.trailer_stream_id}`}
@@ -70,6 +70,13 @@ const Index = () => {
                 allowFullScreen
                 className="w-full h-full"
                 title={`${film.title} trailer`}
+              />
+            ) : film?.poster_url ? (
+              <img
+                src={film.poster_url}
+                alt={`${film.title} poster`}
+                loading="lazy"
+                className="w-full h-full object-cover"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
