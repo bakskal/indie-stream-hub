@@ -205,8 +205,12 @@ export default function Watch() {
       }
     })();
 
-    const onPause = () => { void saveProgress(true); };
+    const onPause = () => { setIsPlaying(false); void saveProgress(true); };
+    const onPlay = () => { setIsPlaying(true); };
+    const onEnded = () => { setIsPlaying(false); };
     video.addEventListener("pause", onPause);
+    video.addEventListener("play", onPlay);
+    video.addEventListener("ended", onEnded);
 
     // Fire-and-forget save on tab close
     let cachedToken: string | null = null;
