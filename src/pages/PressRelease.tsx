@@ -129,21 +129,9 @@ export default function PressRelease() {
       <SiteHeader />
       <main className="flex-1 container py-10">
         <p className="text-[11px] tracking-[0.3em] text-white/70 font-medium">PRESS RELEASE</p>
-        <h1 className="font-display text-4xl md:text-5xl text-white mt-2 mb-3">
+        <h1 className="font-display text-4xl md:text-5xl text-white mt-2 mb-10">
           SEE WHAT EVERYONE IS SAYING!
         </h1>
-        <p className="text-sm text-white/60 mb-10 max-w-xl">
-          A waterfall of coverage — videos, articles, interviews and reviews — laid out with{" "}
-          <a
-            href="https://webkit.org/blog/17660/introducing-css-grid-lanes/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline decoration-white/40 hover:text-white"
-          >
-            CSS Grid Lanes
-          </a>{" "}
-          where supported, with a clean column fallback everywhere else.
-        </p>
 
         {/* Videos row */}
         <div className="grid md:grid-cols-2 gap-6 mb-6">
