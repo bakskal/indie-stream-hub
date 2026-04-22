@@ -84,6 +84,12 @@ export function SiteHeader() {
           )}
         </div>
       </div>
+      {/* Mobile-only tagline, centered under the header so it never clips */}
+      <div className="sm:hidden container -mt-1 pb-2 text-center">
+        <span className="font-display text-[11px] tracking-[0.15em] text-white/90 italic">
+          Let There Be Light
+        </span>
+      </div>
     </header>
   );
 }
