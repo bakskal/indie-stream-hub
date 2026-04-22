@@ -105,6 +105,7 @@ export default function Watch() {
   const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState<"intro" | "feature">("feature");
   const [castReady, setCastReady] = useState(false);
+  const [castSdkLoaded, setCastSdkLoaded] = useState(false);
   const [isCasting, setIsCasting] = useState(false);
   const [airplayAvailable, setAirplayAvailable] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -319,6 +320,7 @@ export default function Watch() {
           receiverApplicationId: "CC1AD845",
           autoJoinPolicy: w.chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
         });
+        setCastSdkLoaded(true);
 
         const update = () => {
           const state = ctx.getCastState();
@@ -507,7 +509,7 @@ export default function Watch() {
     };
   }, [isPlaying]);
 
-  const showCastButton = castReady || airplayAvailable;
+  const showCastButton = castReady || castSdkLoaded || airplayAvailable;
   const showAndroidHelper = platform.isAndroid && !showCastButton;
   const isAirplay = platform.isIOS && airplayAvailable;
   const ambientOn = isPlaying && phase === "feature";
