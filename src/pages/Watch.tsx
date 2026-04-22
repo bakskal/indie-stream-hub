@@ -246,6 +246,8 @@ export default function Watch() {
       window.removeEventListener("beforeunload", onBeforeUnload);
       video.removeEventListener("ended", onIntroEnded);
       video.removeEventListener("pause", onPause);
+      video.removeEventListener("play", onPlay);
+      video.removeEventListener("ended", onEnded);
       if (saveTimer) clearInterval(saveTimer);
       void saveProgress(true);
       if (hls) hls.destroy();
