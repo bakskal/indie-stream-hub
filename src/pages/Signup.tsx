@@ -17,12 +17,33 @@ export default function Signup() {
   const [displayName, setDisplayName] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const from = params.get("from") || "/library";
+  const from = params.get("from") || "/";
+  const intent = params.get("intent");
+  const filmId = params.get("film");
+
+  const handlePostAuth = async () => {
+    if (intent === "rent" && filmId) {
+      try {
+        const { data, error } = await supabase.functions.invoke("create-checkout", {
+          body: { filmId },
+        });
+        if (error) throw error;
+        if (!data?.url) throw new Error("No checkout URL returned");
+        window.location.href = data.url;
+        return;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Could not start checkout";
+        toast({ title: "Checkout error", description: message, variant: "destructive" });
+      }
+    }
+    navigate(from, { replace: true });
+  };
 
   useEffect(() => {
-    document.title = "Create account — Indie Reel";
-    if (user) navigate(from, { replace: true });
-  }, [user, from, navigate]);
+    document.title = "Create account — Rock On Motion Pictures";
+    if (user) handlePostAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +56,7 @@ export default function Signup() {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/library`,
+        emailRedirectTo: `${window.location.origin}/`,
         data: { display_name: displayName || email.split("@")[0] },
       },
     });
@@ -45,24 +66,27 @@ export default function Signup() {
       return;
     }
 
-    // If the project requires email confirmation, signUp returns a user but no session.
-    // In that case, try to sign in directly — succeeds when confirmation is disabled.
+    // Email confirmation is disabled — sign in immediately if no session returned.
     if (!data.session) {
       const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
       if (signInError) {
         setLoading(false);
         toast({
           title: "Account created",
-          description: "Confirm your email, then sign in.",
+          description: "Please sign in to continue.",
         });
-        navigate(`/login?from=${encodeURIComponent(from)}`, { replace: true });
+        const qs = new URLSearchParams();
+        qs.set("from", from);
+        if (intent) qs.set("intent", intent);
+        if (filmId) qs.set("film", filmId);
+        navigate(`/login?${qs.toString()}`, { replace: true });
         return;
       }
     }
 
     setLoading(false);
     toast({ title: "Welcome", description: "Account created." });
-    navigate(from, { replace: true });
+    await handlePostAuth();
   };
 
   return (
