@@ -8,12 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-interface RentalRow {
+interface PurchaseRow {
   id: string;
-  status: "active" | "expired" | "refunded";
   purchased_at: string;
   expires_at: string;
-  films: { id: string; title: string; tagline: string | null; poster_url: string | null } | null;
+  films: { id: string; title: string; description: string | null; thumbnail_url: string | null } | null;
 }
 
 function formatRemaining(expiresAt: string): { label: string; expired: boolean } {
@@ -27,25 +26,24 @@ function formatRemaining(expiresAt: string): { label: string; expired: boolean }
 
 export default function Library() {
   const { user } = useAuth();
-  const [rentals, setRentals] = useState<RentalRow[]>([]);
+  const [purchases, setPurchases] = useState<PurchaseRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [, force] = useState(0);
 
-  useEffect(() => { document.title = "My library — Indie Reel"; }, []);
+  useEffect(() => { document.title = "My library — Rock On Motion Pictures"; }, []);
 
   useEffect(() => {
     if (!user) return;
     (async () => {
       const { data } = await supabase
-        .from("rentals")
-        .select("id, status, purchased_at, expires_at, films(id, title, tagline, poster_url)")
+        .from("purchases")
+        .select("id, purchased_at, expires_at, films(id, title, description, thumbnail_url)")
         .order("purchased_at", { ascending: false });
-      setRentals((data as unknown as RentalRow[]) ?? []);
+      setPurchases((data as unknown as PurchaseRow[]) ?? []);
       setLoading(false);
     })();
   }, [user]);
 
-  // tick countdown every 30s
   useEffect(() => {
     const id = setInterval(() => force((n) => n + 1), 30_000);
     return () => clearInterval(id);
@@ -60,7 +58,7 @@ export default function Library() {
 
         {loading ? (
           <p className="text-muted-foreground">Loading…</p>
-        ) : rentals.length === 0 ? (
+        ) : purchases.length === 0 ? (
           <Card className="bg-surface border-border">
             <CardContent className="py-12 text-center">
               <p className="text-muted-foreground mb-6">No rentals yet.</p>
@@ -71,19 +69,16 @@ export default function Library() {
           </Card>
         ) : (
           <div className="space-y-4">
-            {rentals.map((r) => {
-              const remaining = formatRemaining(r.expires_at);
-              const isActive = r.status === "active" && !remaining.expired;
+            {purchases.map((p) => {
+              const remaining = formatRemaining(p.expires_at);
+              const isActive = !remaining.expired;
               return (
-                <Card key={r.id} className="bg-surface border-border">
+                <Card key={p.id} className="bg-surface border-border">
                   <CardHeader className="flex flex-row items-start justify-between space-y-0">
                     <div>
                       <CardTitle className="font-display text-xl">
-                        {r.films?.title ?? "Untitled"}
+                        {p.films?.title ?? "Untitled"}
                       </CardTitle>
-                      {r.films?.tagline && (
-                        <p className="text-sm text-muted-foreground mt-1">{r.films.tagline}</p>
-                      )}
                     </div>
                     <Badge variant={isActive ? "default" : "secondary"}>
                       {isActive ? remaining.label : "Ended"}
@@ -91,11 +86,11 @@ export default function Library() {
                   </CardHeader>
                   <CardContent className="flex items-center justify-between">
                     <p className="text-xs text-muted-foreground">
-                      Purchased {new Date(r.purchased_at).toLocaleString()}
+                      Purchased {new Date(p.purchased_at).toLocaleString()}
                     </p>
                     {isActive ? (
                       <Button asChild>
-                        <Link to={`/watch/${r.id}`}>Watch now</Link>
+                        <Link to={`/watch/${p.id}`}>Watch now</Link>
                       </Button>
                     ) : (
                       <Button asChild variant="outline">

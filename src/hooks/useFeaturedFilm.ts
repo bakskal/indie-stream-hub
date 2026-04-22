@@ -1,19 +1,20 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
+/** Hardcoded rental window — DB schema doesn't store it. */
+export const RENTAL_WINDOW_HOURS = 72;
+
 export interface Film {
   id: string;
   title: string;
-  tagline: string | null;
-  synopsis: string | null;
-  poster_url: string | null;
-  trailer_stream_id: string | null;
-  feature_stream_id: string | null;
-  runtime_seconds: number | null;
-  price_cents: number;
-  currency: string;
-  rental_window_hours: number;
-  active: boolean;
+  description: string | null;
+  thumbnail_url: string | null;
+  /** Full Cloudflare Stream HLS URL (e.g. .../manifest/video.m3u8). */
+  video_asset_id: string | null;
+  /** Price in USD (numeric, e.g. 6.99). */
+  price: number;
+  price_gbp: number | null;
+  price_inr: number | null;
 }
 
 export function useFeaturedFilm() {
@@ -26,8 +27,7 @@ export function useFeaturedFilm() {
     (async () => {
       const { data, error } = await supabase
         .from("films")
-        .select("*")
-        .eq("active", true)
+        .select("id, title, description, thumbnail_url, video_asset_id, price, price_gbp, price_inr")
         .order("created_at", { ascending: true })
         .limit(1)
         .maybeSingle();

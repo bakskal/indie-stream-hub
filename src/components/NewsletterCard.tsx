@@ -14,7 +14,7 @@ export function NewsletterCard() {
     setLoading(true);
     const { error } = await supabase
       .from("newsletter_subscribers")
-      .insert({ email: email.trim().toLowerCase(), source: "footer" });
+      .insert({ email: email.trim().toLowerCase() });
     setLoading(false);
 
     if (error) {
