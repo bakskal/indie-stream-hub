@@ -47,7 +47,7 @@ const Index = () => {
               <h1 className="font-display text-5xl md:text-7xl mt-5 text-white text-balance">
                 {loading ? "Loading…" : film?.title ?? "Mr. Paanwala"}
               </h1>
-              <p className="mt-4 text-white/75 max-w-md">
+              <p className="mt-4 text-white/90 max-w-md">
                 Preview the trailer. Exclusive Access. One Powerful Story. Watch It First.
               </p>
               {rental ? (

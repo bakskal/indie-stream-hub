@@ -75,7 +75,7 @@ export function RentalAccessCard({ filmId, price, rentalWindowHours }: Props) {
             <Link to={`/watch/${rental.id}`}>Watch movie</Link>
           </Button>
         </div>
-        <span className="inline-block rounded-full bg-secondary/40 border border-white/10 px-3 py-1 text-[11px] text-white/80">
+        <span className="inline-block rounded-full bg-white/15 border border-white/25 px-3 py-1 text-[11px] text-white">
           {formatRemaining(rental.expires_at)} · {rentalWindowHours}-hour rental access
         </span>
       </div>
@@ -97,7 +97,7 @@ export function RentalAccessCard({ filmId, price, rentalWindowHours }: Props) {
           Rent now
         </Button>
       </div>
-      <span className="inline-block rounded-full bg-secondary/40 border border-white/10 px-3 py-1 text-[11px] text-white/80">
+      <span className="inline-block rounded-full bg-white/15 border border-white/25 px-3 py-1 text-[11px] text-white">
         {rentalWindowHours}-hour rental access
       </span>
     </div>
