@@ -500,6 +500,8 @@ export default function Watch() {
   }, [isPlaying]);
 
   const showCastButton = castReady || airplayAvailable;
+  const showAndroidHelper = platform.isAndroid && !showCastButton;
+  const isAirplay = platform.isIOS && airplayAvailable;
   const ambientOn = isPlaying && phase === "feature";
 
   return (
