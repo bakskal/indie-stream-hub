@@ -14,16 +14,234 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      films: {
+        Row: {
+          active: boolean
+          created_at: string
+          currency: string
+          feature_stream_id: string | null
+          id: string
+          poster_url: string | null
+          price_cents: number
+          rental_window_hours: number
+          runtime_seconds: number | null
+          synopsis: string | null
+          tagline: string | null
+          title: string
+          trailer_stream_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          currency?: string
+          feature_stream_id?: string | null
+          id?: string
+          poster_url?: string | null
+          price_cents?: number
+          rental_window_hours?: number
+          runtime_seconds?: number | null
+          synopsis?: string | null
+          tagline?: string | null
+          title: string
+          trailer_stream_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          currency?: string
+          feature_stream_id?: string | null
+          id?: string
+          poster_url?: string | null
+          price_cents?: number
+          rental_window_hours?: number
+          runtime_seconds?: number | null
+          synopsis?: string | null
+          tagline?: string | null
+          title?: string
+          trailer_stream_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      newsletter_subscribers: {
+        Row: {
+          email: string
+          id: string
+          source: string | null
+          subscribed_at: string
+          unsubscribed_at: string | null
+        }
+        Insert: {
+          email: string
+          id?: string
+          source?: string | null
+          subscribed_at?: string
+          unsubscribed_at?: string | null
+        }
+        Update: {
+          email?: string
+          id?: string
+          source?: string | null
+          subscribed_at?: string
+          unsubscribed_at?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      rentals: {
+        Row: {
+          amount_cents: number | null
+          created_at: string
+          currency: string | null
+          expires_at: string
+          film_id: string
+          id: string
+          purchased_at: string
+          status: Database["public"]["Enums"]["rental_status"]
+          stripe_session_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_cents?: number | null
+          created_at?: string
+          currency?: string | null
+          expires_at: string
+          film_id: string
+          id?: string
+          purchased_at?: string
+          status?: Database["public"]["Enums"]["rental_status"]
+          stripe_session_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number | null
+          created_at?: string
+          currency?: string | null
+          expires_at?: string
+          film_id?: string
+          id?: string
+          purchased_at?: string
+          status?: Database["public"]["Enums"]["rental_status"]
+          stripe_session_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rentals_film_id_fkey"
+            columns: ["film_id"]
+            isOneToOne: false
+            referencedRelation: "films"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      watch_history: {
+        Row: {
+          duration_seconds: number | null
+          film_id: string
+          id: string
+          position_seconds: number
+          rental_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          duration_seconds?: number | null
+          film_id: string
+          id?: string
+          position_seconds?: number
+          rental_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          duration_seconds?: number | null
+          film_id?: string
+          id?: string
+          position_seconds?: number
+          rental_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "watch_history_film_id_fkey"
+            columns: ["film_id"]
+            isOneToOne: false
+            referencedRelation: "films"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "watch_history_rental_id_fkey"
+            columns: ["rental_id"]
+            isOneToOne: true
+            referencedRelation: "rentals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
+      rental_status: "active" | "expired" | "refunded"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +368,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+      rental_status: ["active", "expired", "refunded"],
+    },
   },
 } as const
