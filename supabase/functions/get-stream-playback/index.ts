@@ -6,8 +6,12 @@
 // added as secrets, mint a signed Stream token here for short-TTL playback
 // instead of returning the unsigned manifest URL.
 
-import { corsHeaders } from "jsr:@supabase/functions-js/cors";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
