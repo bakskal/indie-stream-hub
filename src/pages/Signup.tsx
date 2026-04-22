@@ -31,7 +31,7 @@ export default function Signup() {
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -39,16 +39,30 @@ export default function Signup() {
         data: { display_name: displayName || email.split("@")[0] },
       },
     });
-    setLoading(false);
     if (error) {
+      setLoading(false);
       toast({ title: "Couldn't create account", description: error.message, variant: "destructive" });
       return;
     }
-    toast({
-      title: "Account created",
-      description: "Check your email to confirm, then sign in.",
-    });
-    navigate(`/login?from=${encodeURIComponent(from)}`, { replace: true });
+
+    // If the project requires email confirmation, signUp returns a user but no session.
+    // In that case, try to sign in directly — succeeds when confirmation is disabled.
+    if (!data.session) {
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) {
+        setLoading(false);
+        toast({
+          title: "Account created",
+          description: "Confirm your email, then sign in.",
+        });
+        navigate(`/login?from=${encodeURIComponent(from)}`, { replace: true });
+        return;
+      }
+    }
+
+    setLoading(false);
+    toast({ title: "Welcome", description: "Account created." });
+    navigate(from, { replace: true });
   };
 
   return (
