@@ -25,6 +25,7 @@ export type Database = {
           price_cents: number
           rental_window_hours: number
           runtime_seconds: number | null
+          stripe_price_id: string | null
           synopsis: string | null
           tagline: string | null
           title: string
@@ -41,6 +42,7 @@ export type Database = {
           price_cents?: number
           rental_window_hours?: number
           runtime_seconds?: number | null
+          stripe_price_id?: string | null
           synopsis?: string | null
           tagline?: string | null
           title: string
@@ -57,6 +59,7 @@ export type Database = {
           price_cents?: number
           rental_window_hours?: number
           runtime_seconds?: number | null
+          stripe_price_id?: string | null
           synopsis?: string | null
           tagline?: string | null
           title?: string

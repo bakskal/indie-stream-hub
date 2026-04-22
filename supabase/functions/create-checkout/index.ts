@@ -8,8 +8,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const PRICE_ID = "price_1TOreVRzyVOnKOVg2sAUwNHt";
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -34,6 +32,29 @@ serve(async (req) => {
       throw new Error("filmId is required");
     }
 
+    // Look up the film's Stripe price ID from the database
+    const { data: film, error: filmErr } = await supabaseClient
+      .from("films")
+      .select("stripe_price_id")
+      .eq("id", filmId)
+      .maybeSingle();
+    if (filmErr) throw filmErr;
+    if (!film) {
+      return new Response(JSON.stringify({ error: "Film not found" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 404,
+      });
+    }
+    if (!film.stripe_price_id) {
+      return new Response(
+        JSON.stringify({ error: "This film has no stripe_price_id configured" }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        },
+      );
+    }
+
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
       throw new Error("STRIPE_SECRET_KEY is not configured on this Supabase project");
@@ -51,7 +72,7 @@ serve(async (req) => {
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
-      line_items: [{ price: PRICE_ID, quantity: 1 }],
+      line_items: [{ price: film.stripe_price_id, quantity: 1 }],
       mode: "payment",
       success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/checkout/cancel`,
