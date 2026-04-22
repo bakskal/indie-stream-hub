@@ -121,14 +121,7 @@ function TypeBadge({ type }: { type: string }) {
 
 export default function PressRelease() {
   useEffect(() => {
-    const measure = () => {
-      const main = document.querySelector('main');
-      const card = document.querySelector('main article, main .rounded-3xl');
-      const m = main?.getBoundingClientRect();
-      const c = card?.getBoundingClientRect();
-      document.title = `vw=${window.innerWidth} sw=${document.documentElement.scrollWidth} m=${m?.left.toFixed(0)},${m?.right.toFixed(0)} c=${c?.left.toFixed(0)},${c?.right.toFixed(0)}`;
-    };
-    setTimeout(measure, 500);
+    document.title = "Press Release — Rock On Motion Pictures";
   }, []);
 
   return (
