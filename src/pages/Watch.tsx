@@ -174,25 +174,24 @@ export default function Watch() {
     const onPause = () => { void saveProgress(true); };
     video.addEventListener("pause", onPause);
 
+    // Save on tab close — fire-and-forget keepalive POST so it lands even mid-navigation
+    const SUPABASE_URL = "https://dhbyembenuuscgqwbpwq.supabase.co";
+    const SUPABASE_ANON_KEY =
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRoYnllbWJlbnV1c2NncXdicHdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MjcyMDgsImV4cCI6MjA5MjAwMzIwOH0.mSMwZGiTfi__Pf53xD09Fa9Vsv-1G6FG81IZUP5kx4k";
+    let cachedToken: string | null = null;
+    void supabase.auth.getSession().then(({ data }) => {
+      cachedToken = data.session?.access_token ?? null;
+    });
     const onBeforeUnload = () => {
-      // Best-effort sync flush via sendBeacon-style upsert
       if (!featureStartedRef.current) return;
       const pos = Math.floor(video.currentTime);
-      const url = `${supabase["supabaseUrl" as keyof typeof supabase]}` ; // not used
-      // Use fetch keepalive — supabase-js doesn't expose beacon, but keepalive works on unload
-      const session = supabase.auth.getSession;
-      void session; // silence lint
-      // Fire and forget; upsert via REST
-      const anonKey = (supabase as unknown as { supabaseKey: string }).supabaseKey;
-      const baseUrl = (supabase as unknown as { supabaseUrl: string }).supabaseUrl;
-      const token = (supabase as unknown as { auth: { currentSession?: { access_token?: string } } }).auth.currentSession?.access_token;
       try {
-        fetch(`${baseUrl}/rest/v1/watch_history?on_conflict=user_id,film_id`, {
+        fetch(`${SUPABASE_URL}/rest/v1/watch_history?on_conflict=user_id,film_id`, {
           method: "POST",
           keepalive: true,
           headers: {
-            apikey: anonKey,
-            Authorization: `Bearer ${token ?? anonKey}`,
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${cachedToken ?? SUPABASE_ANON_KEY}`,
             "Content-Type": "application/json",
             Prefer: "resolution=merge-duplicates",
           },
