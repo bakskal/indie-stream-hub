@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Hls from "hls.js";
 import { Cast } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
-import { SiteHeader } from "@/components/SiteHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -86,10 +85,13 @@ export default function Watch() {
   const [phase, setPhase] = useState<"intro" | "feature">("feature");
   const [castReady, setCastReady] = useState(false);
   const [airplayAvailable, setAirplayAvailable] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [chromeVisible, setChromeVisible] = useState(true);
   const [, force] = useState(0);
 
   const lastSavedRef = useRef(0);
   const featureStartedRef = useRef(false);
+  const hideTimerRef = useRef<number | null>(null);
 
   // Fetch playback URL (server verifies active rental)
   useEffect(() => {
@@ -203,8 +205,12 @@ export default function Watch() {
       }
     })();
 
-    const onPause = () => { void saveProgress(true); };
+    const onPause = () => { setIsPlaying(false); void saveProgress(true); };
+    const onPlay = () => { setIsPlaying(true); };
+    const onEnded = () => { setIsPlaying(false); };
     video.addEventListener("pause", onPause);
+    video.addEventListener("play", onPlay);
+    video.addEventListener("ended", onEnded);
 
     // Fire-and-forget save on tab close
     let cachedToken: string | null = null;
@@ -240,6 +246,8 @@ export default function Watch() {
       window.removeEventListener("beforeunload", onBeforeUnload);
       video.removeEventListener("ended", onIntroEnded);
       video.removeEventListener("pause", onPause);
+      video.removeEventListener("play", onPlay);
+      video.removeEventListener("ended", onEnded);
       if (saveTimer) clearInterval(saveTimer);
       void saveProgress(true);
       if (hls) hls.destroy();
@@ -381,74 +389,137 @@ export default function Watch() {
     return () => clearInterval(id);
   }, []);
 
+  // Auto-hide top chrome while playing
+  const revealChrome = useCallback(() => {
+    setChromeVisible(true);
+    if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
+    if (isPlaying) {
+      hideTimerRef.current = window.setTimeout(() => setChromeVisible(false), 3000);
+    }
+  }, [isPlaying]);
+
+  useEffect(() => {
+    if (!isPlaying) {
+      setChromeVisible(true);
+      if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
+      return;
+    }
+    hideTimerRef.current = window.setTimeout(() => setChromeVisible(false), 3000);
+    return () => {
+      if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
+    };
+  }, [isPlaying]);
+
   const showCastButton = castReady || airplayAvailable;
+  const ambientOn = isPlaying && phase === "feature";
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <SiteHeader />
-      <main className="flex-1">
+    <div
+      className="min-h-screen relative overflow-hidden"
+      style={{ background: "#05020a", cursor: isPlaying && !chromeVisible ? "none" : "auto" }}
+      onMouseMove={revealChrome}
+      onTouchStart={revealChrome}
+    >
+      {/* Cinema ambient red glow — only during feature playback */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 transition-opacity duration-[1200ms] ease-in"
+        style={{
+          opacity: ambientOn ? 1 : 0,
+          background:
+            "radial-gradient(ellipse 60% 70% at 0% 50%, hsla(0, 60%, 22%, 0.55) 0%, transparent 60%), radial-gradient(ellipse 60% 70% at 100% 50%, hsla(0, 60%, 22%, 0.55) 0%, transparent 60%)",
+        }}
+      />
+      {/* Vignette */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.7) 100%)",
+        }}
+      />
+
+      <main className="relative min-h-screen flex items-center justify-center px-4 py-16 md:py-20">
         {loading ? (
-          <div className="container py-24 text-center text-muted-foreground">Loading…</div>
+          <div className="text-center text-white/60">Loading…</div>
         ) : error ? (
-          <div className="container max-w-xl py-24 text-center">
+          <div className="max-w-xl text-center text-white">
             <h1 className="font-display text-2xl mb-2">
               {error.toLowerCase().includes("not active") ? "Rental ended" : "Couldn't open rental"}
             </h1>
-            <p className="text-muted-foreground mb-6">{error}</p>
+            <p className="text-white/60 mb-6">{error}</p>
             <div className="flex gap-2 justify-center">
               <Button asChild variant="outline"><Link to="/library">Library</Link></Button>
               <Button asChild><Link to="/">Rent again</Link></Button>
             </div>
           </div>
         ) : playback ? (
-          <>
-            <div className="container max-w-6xl pt-6 flex items-center justify-between">
-              <div>
-                <Link to="/library" className="text-sm text-muted-foreground hover:text-foreground">
-                  ← Library
-                </Link>
-                <h1 className="font-display text-2xl mt-1">{playback.title}</h1>
-              </div>
-              <div className="flex items-center gap-2">
-                {showCastButton ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleCastClick}
-                    title="Cast to a device on your network"
-                  >
-                    <Cast className="h-4 w-4 mr-2" />
-                    Cast
-                  </Button>
-                ) : null}
-                <Badge>{formatRemaining(playback.expires_at)}</Badge>
-              </div>
+          <div className="w-full max-w-6xl relative">
+            <div className="aspect-video rounded-lg overflow-hidden bg-black relative shadow-[0_0_80px_rgba(0,0,0,0.8)]">
+              <video
+                ref={videoRef}
+                className="w-full h-full"
+                controls={phase === "feature"}
+                playsInline
+                poster={phase === "feature" ? playback.playback.poster : undefined}
+                controlsList="nodownload"
+                {...({ "x-webkit-airplay": "allow" } as Record<string, string>)}
+              />
+              {phase === "intro" ? (
+                <div className="absolute top-3 left-3 text-xs uppercase tracking-wider text-white/80 bg-black/40 backdrop-blur px-2 py-1 rounded">
+                  Intro
+                </div>
+              ) : null}
             </div>
-            <div className="container max-w-6xl py-6">
-              <div className="aspect-video rounded-lg overflow-hidden border border-border bg-black relative">
-                <video
-                  ref={videoRef}
-                  className="w-full h-full"
-                  controls={phase === "feature"}
-                  playsInline
-                  poster={phase === "feature" ? playback.playback.poster : undefined}
-                  controlsList="nodownload"
-                  {...({ "x-webkit-airplay": "allow" } as Record<string, string>)}
-                />
-                {phase === "intro" ? (
-                  <div className="absolute top-3 left-3 text-xs uppercase tracking-wider text-white/80 bg-black/40 backdrop-blur px-2 py-1 rounded">
-                    Intro
-                  </div>
-                ) : null}
-              </div>
-              <p className="text-xs text-muted-foreground mt-3">
-                Streaming via Cloudflare. Time-limited to your rental window.
-                {showCastButton ? " Cast to your TV with the Cast button above." : ""}
-              </p>
-            </div>
-          </>
+          </div>
         ) : null}
       </main>
+
+      {/* Floating top bar — auto-hides while playing */}
+      {playback && !loading && !error ? (
+        <div
+          className="fixed top-0 left-0 right-0 z-50 transition-opacity duration-300"
+          style={{
+            opacity: chromeVisible ? 1 : 0,
+            pointerEvents: chromeVisible ? "auto" : "none",
+            background:
+              "linear-gradient(180deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%)",
+          }}
+          onMouseEnter={() => {
+            setChromeVisible(true);
+            if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
+          }}
+        >
+          <div className="flex items-center justify-between gap-4 px-6 py-4">
+            <div className="flex items-center gap-4 min-w-0">
+              <Link to="/library" className="text-sm text-white/70 hover:text-white shrink-0">
+                ← Library
+              </Link>
+              <h1 className="font-display text-base md:text-lg text-white truncate">
+                {playback.title}
+              </h1>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {showCastButton ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCastClick}
+                  title="Cast to a device on your network"
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
+                >
+                  <Cast className="h-4 w-4 mr-2" />
+                  Cast
+                </Button>
+              ) : null}
+              <Badge className="bg-white/10 text-white border-white/20 hover:bg-white/15">
+                {formatRemaining(playback.expires_at)}
+              </Badge>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
