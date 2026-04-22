@@ -125,9 +125,15 @@ export default function PressRelease() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col stage-light">
+    <div className="min-h-screen flex flex-col stage-light overflow-x-hidden">
       <SiteHeader />
-      <main className="flex-1 container px-5 sm:px-6 py-10 overflow-x-hidden">
+      <main
+        className="flex-1 w-full max-w-[1280px] mx-auto py-10 overflow-x-hidden"
+        style={{
+          paddingLeft: 'max(1.75rem, env(safe-area-inset-left))',
+          paddingRight: 'max(1.75rem, env(safe-area-inset-right))',
+        }}
+      >
         <p className="text-[11px] tracking-[0.3em] text-white/70 font-medium">PRESS RELEASE</p>
         <h1 className="font-display text-3xl sm:text-4xl md:text-5xl text-white mt-2 mb-10 text-balance">
           SEE WHAT EVERYONE IS SAYING!

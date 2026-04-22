@@ -128,19 +128,24 @@
    * https://webkit.org/blog/17660/introducing-css-grid-lanes/
    */
   .press-masonry {
-    column-count: 1;
-    column-gap: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
   }
   @media (min-width: 720px) {
-    .press-masonry { column-count: 2; }
+    .press-masonry {
+      display: block;
+      column-count: 2;
+      column-gap: 1.25rem;
+    }
+    .press-masonry > * {
+      break-inside: avoid;
+      margin-bottom: 1.25rem;
+      display: block;
+    }
   }
   @media (min-width: 1024px) {
     .press-masonry { column-count: 3; }
-  }
-  .press-masonry > * {
-    break-inside: avoid;
-    margin-bottom: 1.25rem;
-    display: block;
   }
 
   @supports (grid-template-columns: subgrid) and (display: grid-lanes) {
