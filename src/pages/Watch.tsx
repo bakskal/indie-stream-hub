@@ -1,15 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import Hls from "hls.js";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-interface RentalDetail {
-  id: string;
-  status: string;
+interface PlaybackResponse {
+  title: string;
   expires_at: string;
-  films: { id: string; title: string; feature_stream_id: string | null } | null;
+  playback: {
+    hls: string;
+    iframe: string;
+    poster: string;
+    expires_in_seconds: number;
+  };
 }
 
 function formatRemaining(expiresAt: string): string {
@@ -22,34 +27,63 @@ function formatRemaining(expiresAt: string): string {
 
 export default function Watch() {
   const { rentalId } = useParams<{ rentalId: string }>();
-  const [rental, setRental] = useState<RentalDetail | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [playback, setPlayback] = useState<PlaybackResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [, force] = useState(0);
 
+  // Fetch playback URL (server verifies active rental)
   useEffect(() => {
     if (!rentalId) return;
+    let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("rentals")
-        .select("id, status, expires_at, films(id, title, feature_stream_id)")
-        .eq("id", rentalId)
-        .maybeSingle();
-      setRental(data as unknown as RentalDetail);
+      setLoading(true);
+      setError(null);
+      const { data, error } = await supabase.functions.invoke<PlaybackResponse>(
+        "get-stream-playback",
+        { body: { rental_id: rentalId } },
+      );
+      if (cancelled) return;
+      if (error || !data) {
+        setError(error?.message || "Could not load playback");
+        setLoading(false);
+        return;
+      }
+      setPlayback(data);
       setLoading(false);
     })();
+    return () => { cancelled = true; };
   }, [rentalId]);
 
+  // Set up HLS playback once we have the URL
   useEffect(() => {
-    if (rental?.films?.title) document.title = `Watching ${rental.films.title} — Indie Reel`;
-  }, [rental]);
+    const video = videoRef.current;
+    if (!video || !playback) return;
 
+    const src = playback.playback.hls;
+
+    if (Hls.isSupported()) {
+      const hls = new Hls({ maxBufferLength: 30 });
+      hls.loadSource(src);
+      hls.attachMedia(video);
+      return () => hls.destroy();
+    }
+    // Safari supports HLS natively
+    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = src;
+    }
+  }, [playback]);
+
+  useEffect(() => {
+    if (playback?.title) document.title = `Watching ${playback.title} — Indie Reel`;
+  }, [playback]);
+
+  // Tick countdown
   useEffect(() => {
     const id = setInterval(() => force((n) => n + 1), 30_000);
     return () => clearInterval(id);
   }, []);
-
-  const expired = rental ? new Date(rental.expires_at).getTime() <= Date.now() : false;
-  const active = rental?.status === "active" && !expired;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -57,47 +91,45 @@ export default function Watch() {
       <main className="flex-1">
         {loading ? (
           <div className="container py-24 text-center text-muted-foreground">Loading…</div>
-        ) : !rental ? (
+        ) : error ? (
           <div className="container max-w-xl py-24 text-center">
-            <h1 className="font-display text-2xl mb-4">Rental not found</h1>
-            <Button asChild><Link to="/library">Back to library</Link></Button>
+            <h1 className="font-display text-2xl mb-2">
+              {error.toLowerCase().includes("not active") ? "Rental ended" : "Couldn't open rental"}
+            </h1>
+            <p className="text-muted-foreground mb-6">{error}</p>
+            <div className="flex gap-2 justify-center">
+              <Button asChild variant="outline"><Link to="/library">Library</Link></Button>
+              <Button asChild><Link to="/">Rent again</Link></Button>
+            </div>
           </div>
-        ) : !active ? (
-          <div className="container max-w-xl py-24 text-center">
-            <h1 className="font-display text-2xl mb-2">Rental ended</h1>
-            <p className="text-muted-foreground mb-6">Your viewing window for this rental has closed.</p>
-            <Button asChild><Link to="/">Rent again</Link></Button>
-          </div>
-        ) : (
+        ) : playback ? (
           <>
             <div className="container max-w-6xl pt-6 flex items-center justify-between">
               <div>
                 <Link to="/library" className="text-sm text-muted-foreground hover:text-foreground">
                   ← Library
                 </Link>
-                <h1 className="font-display text-2xl mt-1">{rental.films?.title}</h1>
+                <h1 className="font-display text-2xl mt-1">{playback.title}</h1>
               </div>
-              <Badge>{formatRemaining(rental.expires_at)}</Badge>
+              <Badge>{formatRemaining(playback.expires_at)}</Badge>
             </div>
             <div className="container max-w-6xl py-6">
               <div className="aspect-video rounded-lg overflow-hidden border border-border bg-black">
-                {rental.films?.feature_stream_id ? (
-                  <iframe
-                    src={`https://iframe.videodelivery.net/${rental.films.feature_stream_id}`}
-                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-                    allowFullScreen
-                    className="w-full h-full"
-                    title={rental.films.title}
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm p-8 text-center">
-                    Feature playback will appear here once Cloudflare Stream signing is wired up and the film's stream ID is set.
-                  </div>
-                )}
+                <video
+                  ref={videoRef}
+                  className="w-full h-full"
+                  controls
+                  playsInline
+                  poster={playback.playback.poster}
+                  controlsList="nodownload"
+                />
               </div>
+              <p className="text-xs text-muted-foreground mt-3">
+                Streaming via Cloudflare. Time-limited to your rental window.
+              </p>
             </div>
           </>
-        )}
+        ) : null}
       </main>
     </div>
   );
