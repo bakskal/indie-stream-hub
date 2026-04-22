@@ -53,15 +53,15 @@ export default function Library() {
     <div className="min-h-screen flex flex-col bg-background hero-bg">
       <SiteHeader />
       <main className="flex-1 container max-w-3xl py-16">
-        <h1 className="font-display text-4xl font-semibold display-tracking mb-2">Your library</h1>
-        <p className="text-muted-foreground mb-10">Active rentals and viewing history.</p>
+        <h1 className="font-display text-4xl font-semibold display-tracking mb-2 text-white">Your library</h1>
+        <p className="text-white/85 mb-10">Active rentals and viewing history.</p>
 
         {loading ? (
-          <p className="text-muted-foreground">Loading…</p>
+          <p className="text-white/85">Loading…</p>
         ) : purchases.length === 0 ? (
-          <Card className="bg-surface border-border">
+          <Card className="bg-white text-card-foreground border-border">
             <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground mb-6">No rentals yet.</p>
+              <p className="text-card-foreground/75 mb-6">No rentals yet.</p>
               <Button asChild>
                 <Link to="/">Browse the film</Link>
               </Button>
@@ -73,7 +73,7 @@ export default function Library() {
               const remaining = formatRemaining(p.expires_at);
               const isActive = !remaining.expired;
               return (
-                <Card key={p.id} className="bg-surface border-border">
+                <Card key={p.id} className="bg-white text-card-foreground border-border">
                   <CardHeader className="flex flex-row items-start justify-between space-y-0">
                     <div>
                       <CardTitle className="font-display text-xl">
@@ -85,7 +85,7 @@ export default function Library() {
                     </Badge>
                   </CardHeader>
                   <CardContent className="flex items-center justify-between">
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-card-foreground/70">
                       Purchased {new Date(p.purchased_at).toLocaleString()}
                     </p>
                     {isActive ? (
