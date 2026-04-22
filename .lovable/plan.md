@@ -1,37 +1,46 @@
 
 
-## Move pricing out of code, into Stripe + the `films` table
+## Mobile cast/AirPlay support
 
-Right now the price is hardcoded in `supabase/functions/create-checkout/index.ts` as `PRICE_ID`. Every Stripe product change = code edit. Let's fix that.
+Make casting work as well as the web platform allows on phones and tablets, without going native.
 
-### The approach
+### What changes for the user
 
-Store the Stripe **price ID** on each film row in the database. The edge function reads it from there. Stripe owns the actual amount/currency; the DB just holds the pointer.
+- **iPhone / iPad Safari**: A reliable AirPlay button in the top bar that opens the iOS AirPlay picker (Apple TV, AirPlay 2 speakers, etc.).
+- **Android Chrome (phone/tablet)**: A "Cast" button that opens a short tooltip explaining how to cast via Chrome's ⋮ menu → Cast (since Google blocks programmatic cast on mobile web — this is what every major streaming site does).
+- **Desktop**: Unchanged. Chromecast on Chrome/Edge and AirPlay on macOS Safari work exactly as today.
 
-Your `films` table already has `price_cents` and `currency` columns — we'll add one more: `stripe_price_id`.
+### Implementation (Watch.tsx only)
 
-### Changes
+1. **Detect platform once on mount**
+   - `isIOS` = iOS/iPadOS Safari (check user agent + `webkitShowPlaybackTargetPicker` on the video element)
+   - `isAndroid` = Android user agent
+   - `isDesktopCastCapable` = existing `cast_sender.js` SDK loads successfully
 
-**1. Database migration**
-- Add `stripe_price_id text` column to `films`.
-- Backfill the current film's row with your new GBP price ID (you'll paste it in — must start with `price_`, not `prod_`).
+2. **iOS AirPlay path (fix reliability)**
+   - On iOS, show the AirPlay button **unconditionally** once the video element is mounted (don't wait for the `webkitplaybacktargetavailabilitychanged` event — it's unreliable on iOS and often fires only after the picker opens).
+   - Clicking calls `video.webkitShowPlaybackTargetPicker()`. iOS handles "no devices" gracefully with its own UI.
+   - Label the button "AirPlay" on iOS instead of "Cast" for clarity.
 
-**2. Edge function: `supabase/functions/create-checkout/index.ts`**
-- Remove the hardcoded `PRICE_ID` constant.
-- After auth, query `films` for the row matching `filmId` and read `stripe_price_id`.
-- Pass that into `stripe.checkout.sessions.create({ line_items: [{ price: filmRow.stripe_price_id, quantity: 1 }] })`.
-- Return a clear 400 if the film has no `stripe_price_id` set.
+3. **Android Chrome helper path**
+   - Show a "Cast" button that opens a small popover with: "To cast this video, tap Chrome's ⋮ menu and choose **Cast…**". Include a one-line note that mobile browsers don't allow in-page casting.
+   - This avoids the current behavior where the button just doesn't appear and users think it's broken.
 
-**3. Frontend display price (optional cleanup)**
-- `useFeaturedFilm.ts` already selects `price_gbp`. Keep using that for the UI label so the card shows £ without a Stripe round-trip.
-- The actual charged amount comes from Stripe via the `stripe_price_id` — single source of truth.
+4. **Keep existing desktop logic**
+   - The current `loadCastSdk` + `CastContext` flow stays for desktop Chrome/Edge.
+   - The current "Stop casting" toggle stays.
 
-### Result
+5. **Top bar visibility**
+   - Make sure the auto-hide chrome reveals on tap (already does via `onTouchStart`) so the AirPlay/Cast button is reachable on mobile.
 
-- New product in Stripe? → just update the `stripe_price_id` value on the film row in the Lovable Cloud table editor. No code deploy.
-- Display price stays driven by `price_gbp` on the row (or we can drop that column later and fetch from Stripe if you want zero duplication).
+### Files changed
 
-### What I need from you
+- `src/pages/Watch.tsx` — platform detection, iOS AirPlay always-on, Android helper popover, button labeling.
 
-The new GBP **price ID** from Stripe (starts with `price_`, found under your product's Pricing section). I'll put it in the migration as the backfill value.
+No backend, schema, or other page changes.
+
+### Out of scope (and why)
+
+- **True in-page Chromecast on Android Chrome**: not possible from a website. Would require shipping a native app (Capacitor + native Cast SDK) — you already declined that path.
+- **Cast from iOS Chrome / Firefox mobile**: Apple blocks all non-Safari cast/AirPlay APIs on iOS. Nothing a web app can do.
 
