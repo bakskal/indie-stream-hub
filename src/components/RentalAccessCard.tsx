@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveRental } from "@/hooks/useActiveRental";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   filmId: string;
@@ -48,11 +49,18 @@ export function RentalAccessCard({ filmId, priceCents, currency, rentalWindowHou
       return;
     }
     setBusy(true);
-    toast({
-      title: "Checkout coming online",
-      description: "Payments will be activated once Stripe is connected. Your account is ready.",
-    });
-    setBusy(false);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: { filmId },
+      });
+      if (error) throw error;
+      if (!data?.url) throw new Error("No checkout URL returned");
+      window.location.href = data.url;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Could not start checkout";
+      toast({ title: "Checkout error", description: message, variant: "destructive" });
+      setBusy(false);
+    }
   };
 
   // ACTIVE RENTAL — show "Enjoy" / Watch movie
