@@ -34,11 +34,11 @@ export function RentalAccessCard({ filmId, price, rentalWindowHours }: Props) {
     return () => clearInterval(id);
   }, []);
 
-  const formatted = new Intl.NumberFormat("en-US", {
+  const formatted = new Intl.NumberFormat("en-GB", {
     style: "currency",
-    currency: "USD",
+    currency: "GBP",
   }).format(price);
-  const priceLabel = `${formatted} USD`;
+  const priceLabel = `${formatted} GBP`;
 
   const handleRent = async () => {
     if (!user) {
