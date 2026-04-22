@@ -18,7 +18,7 @@ export function SiteHeader() {
       <div className="container flex items-center justify-between gap-3 sm:gap-6 pt-4 sm:pt-6 pb-3 sm:pb-4">
         {/* Logo with spotlight beam */}
         <Link to="/" className="flex items-center gap-3 sm:gap-4 shrink-0 group min-w-0">
-          <div className="relative shrink-0">
+          <div className="relative shrink-0 ml-[60px] sm:ml-0">
             <img
               src={logo}
               alt="Rock On Motion Pictures"
