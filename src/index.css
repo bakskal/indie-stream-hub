@@ -132,7 +132,7 @@
     flex-direction: column;
     gap: 1.25rem;
   }
-  @media (min-width: 720px) {
+  @media (min-width: 900px) {
     .press-masonry {
       display: block;
       column-count: 2;
@@ -144,7 +144,7 @@
       display: block;
     }
   }
-  @media (min-width: 1024px) {
+  @media (min-width: 1200px) {
     .press-masonry { column-count: 3; }
   }
 
