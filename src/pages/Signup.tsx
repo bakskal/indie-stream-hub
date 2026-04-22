@@ -97,8 +97,8 @@ export default function Signup() {
         <div className="w-full max-w-sm reveal">
           <h1 className="font-display text-3xl font-semibold display-tracking mb-2 text-white">Create your account</h1>
           <p className="text-white/85 mb-8">Takes about 30 seconds.</p>
-          <GoogleAuthButton label="Sign up with Google" />
-          <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          {/* <GoogleAuthButton label="Sign up with Google" /> */}
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name" className="text-white">Display name</Label>
               <Input id="name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Optional" className="bg-surface text-card-foreground" />

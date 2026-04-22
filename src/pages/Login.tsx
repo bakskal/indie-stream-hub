@@ -65,8 +65,8 @@ export default function Login() {
         <div className="w-full max-w-sm reveal">
           <h1 className="font-display text-3xl font-semibold display-tracking mb-2 text-white">Welcome back</h1>
           <p className="text-white/85 mb-8">Sign in to access your rentals.</p>
-          <GoogleAuthButton label="Sign in with Google" />
-          <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          {/* <GoogleAuthButton label="Sign in with Google" /> */}
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email" className="text-white">Email</Label>
               <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="bg-surface text-card-foreground" />
