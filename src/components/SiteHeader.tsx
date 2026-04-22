@@ -58,7 +58,7 @@ export function SiteHeader() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Facebook"
-            className="text-white/80 hover:text-white"
+            className="hidden sm:inline text-white/80 hover:text-white"
           >
             <Facebook className="h-4 w-4" />
           </a>
