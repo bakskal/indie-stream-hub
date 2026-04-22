@@ -125,7 +125,7 @@ export default function PressRelease() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col stage-light">
+    <div className="min-h-screen flex flex-col stage-light overflow-x-hidden">
       <SiteHeader />
       <main className="flex-1 w-full max-w-[1280px] mx-auto px-5 sm:px-6 py-10 overflow-x-hidden">
         <p className="text-[11px] tracking-[0.3em] text-white/70 font-medium">PRESS RELEASE</p>
