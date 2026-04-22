@@ -255,9 +255,15 @@ export default function Watch() {
   }, [playback, user]);
 
   // ---- Cast init ----
+  // Tracks whether a receiver is actually reachable on the network — not just
+  // whether the SDK loaded. Hiding the button when no device is around is what
+  // every major streaming site does, and it's why the icon would appear/disappear
+  // before.
   useEffect(() => {
     if (!playback) return;
     let cancelled = false;
+    let removeListener: (() => void) | null = null;
+
     void loadCastSdk().then((ok) => {
       if (cancelled || !ok) return;
       const w = window as unknown as {
@@ -266,25 +272,54 @@ export default function Watch() {
             CastContext: {
               getInstance: () => {
                 setOptions: (o: Record<string, unknown>) => void;
+                addEventListener: (type: string, fn: (e: { castState: string }) => void) => void;
+                removeEventListener: (type: string, fn: (e: { castState: string }) => void) => void;
+                getCastState: () => string;
               };
             };
-            RemotePlayer: new () => unknown;
-            RemotePlayerController: new (p: unknown) => unknown;
+            CastContextEventType: { CAST_STATE_CHANGED: string };
+            CastState: { NO_DEVICES_AVAILABLE: string };
           };
         };
-        chrome: { cast: { media: { DEFAULT_MEDIA_RECEIVER_APP_ID: string }; AutoJoinPolicy: { ORIGIN_SCOPED: string } } };
+        chrome: {
+          cast: {
+            media: { DEFAULT_MEDIA_RECEIVER_APP_ID: string };
+            AutoJoinPolicy: { ORIGIN_SCOPED: string };
+          };
+        };
       };
       try {
-        w.cast.framework.CastContext.getInstance().setOptions({
-          receiverApplicationId: w.chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+        const ctx = w.cast.framework.CastContext.getInstance();
+        ctx.setOptions({
+          // CC1AD845 = the official Default Media Receiver (CAF). Handles
+          // HLS with fMP4 segments correctly — the previous "default" constant
+          // sometimes resolved to a styled receiver that played audio only.
+          receiverApplicationId: "CC1AD845",
           autoJoinPolicy: w.chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
         });
-        setCastReady(true);
+
+        const update = () => {
+          const state = ctx.getCastState();
+          setCastReady(state !== w.cast.framework.CastState.NO_DEVICES_AVAILABLE);
+        };
+        const onStateChange = () => update();
+        ctx.addEventListener(
+          w.cast.framework.CastContextEventType.CAST_STATE_CHANGED,
+          onStateChange,
+        );
+        removeListener = () => ctx.removeEventListener(
+          w.cast.framework.CastContextEventType.CAST_STATE_CHANGED,
+          onStateChange,
+        );
+        update();
       } catch {
         // SDK not fully ready
       }
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      if (removeListener) removeListener();
+    };
   }, [playback]);
 
   // ---- AirPlay availability (Safari only) ----
