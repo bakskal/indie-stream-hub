@@ -120,4 +120,44 @@
   .nav-pill {
     @apply rounded-full bg-white/5 border border-white/15 backdrop-blur px-2 py-1.5 flex items-center gap-1;
   }
+
+  /*
+   * Press masonry — uses native CSS Grid Lanes when supported (Safari TP 234+),
+   * falls back to CSS multi-column layout otherwise. Both produce a true
+   * waterfall masonry where cards tuck against the one above them.
+   * https://webkit.org/blog/17660/introducing-css-grid-lanes/
+   */
+  .press-masonry {
+    column-count: 1;
+    column-gap: 1.25rem;
+  }
+  @media (min-width: 640px) {
+    .press-masonry { column-count: 2; }
+  }
+  @media (min-width: 1024px) {
+    .press-masonry { column-count: 3; }
+  }
+  .press-masonry > * {
+    break-inside: avoid;
+    margin-bottom: 1.25rem;
+    display: block;
+  }
+
+  @supports (grid-template-columns: subgrid) and (display: grid-lanes) {
+    .press-masonry {
+      display: grid-lanes;
+      grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+      gap: 1.25rem;
+      flow-tolerance: 2em;
+      column-count: initial;
+    }
+    .press-masonry > * { margin-bottom: 0; }
+  }
+
+  /* Featured press item spans 2 lanes when Grid Lanes is supported */
+  @supports (display: grid-lanes) {
+    .press-masonry > .press-feature {
+      grid-column: span 2;
+    }
+  }
 }
