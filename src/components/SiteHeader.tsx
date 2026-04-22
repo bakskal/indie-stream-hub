@@ -24,12 +24,10 @@ export function SiteHeader() {
               alt="Rock On Motion Pictures"
               className="h-12 sm:h-16 w-auto relative z-10 drop-shadow-[0_0_18px_rgba(120,200,255,0.55)]"
             />
-            {/* Spotlight beam pointing down from logo */}
+            {/* Spotlight beam pointing down from logo — anchored to logo left edge on mobile so it never clips off-screen */}
             <div
-              className="absolute left-1/2 top-full -translate-x-1/2 pointer-events-none hidden sm:block"
+              className="absolute top-full pointer-events-none w-[140px] sm:w-[180px] h-[56px] sm:h-[70px] left-0 sm:left-1/2 sm:-translate-x-1/2"
               style={{
-                width: "180px",
-                height: "70px",
                 background:
                   "linear-gradient(180deg, hsla(200, 95%, 75%, 0.55) 0%, hsla(200, 90%, 70%, 0.18) 50%, transparent 100%)",
                 clipPath: "polygon(35% 0, 65% 0, 100% 100%, 0 100%)",
@@ -37,8 +35,8 @@ export function SiteHeader() {
                 marginTop: "-6px",
               }}
             />
-            {/* "Let There Be Light" tagline under spotlight — desktop only, mobile version sits below header */}
-            <span className="hidden sm:inline absolute left-1/2 -translate-x-1/2 top-[calc(100%+30px)] whitespace-nowrap font-display text-[11px] tracking-[0.15em] text-white/90 italic">
+            {/* "Let There Be Light" tagline under spotlight — anchored to logo left edge on mobile, centered on desktop */}
+            <span className="absolute top-[calc(100%+22px)] sm:top-[calc(100%+30px)] left-0 sm:left-1/2 sm:-translate-x-1/2 w-[140px] sm:w-auto text-center sm:text-left whitespace-nowrap font-display text-[10px] sm:text-[11px] tracking-[0.15em] text-white/90 italic">
               Let There Be Light
             </span>
           </div>
