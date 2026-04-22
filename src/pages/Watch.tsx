@@ -442,13 +442,13 @@ export default function Watch() {
 
       <main className="relative min-h-screen flex items-center justify-center px-4 py-16 md:py-20">
         {loading ? (
-          <div className="text-center text-white/60">Loading…</div>
+          <div className="text-center text-white/85">Loading…</div>
         ) : error ? (
           <div className="max-w-xl text-center text-white">
             <h1 className="font-display text-2xl mb-2">
               {error.toLowerCase().includes("not active") ? "Rental ended" : "Couldn't open rental"}
             </h1>
-            <p className="text-white/60 mb-6">{error}</p>
+            <p className="text-white/85 mb-6">{error}</p>
             <div className="flex gap-2 justify-center">
               <Button asChild variant="outline"><Link to="/library">Library</Link></Button>
               <Button asChild><Link to="/">Rent again</Link></Button>

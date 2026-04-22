@@ -54,14 +54,14 @@ export default function CheckoutSuccess() {
       <main className="flex-1 container max-w-lg py-24 text-center reveal">
         {status === "verifying" && (
           <>
-            <h1 className="font-display text-4xl mb-4">Confirming your payment…</h1>
-            <p className="text-white/70">Hang tight, this only takes a second.</p>
+            <h1 className="font-display text-4xl mb-4 text-white">Confirming your payment…</h1>
+            <p className="text-white/85">Hang tight, this only takes a second.</p>
           </>
         )}
         {status === "paid" && (
           <>
-            <h1 className="font-display text-4xl mb-4">You're in.</h1>
-            <p className="text-white/70 mb-8">
+            <h1 className="font-display text-4xl mb-4 text-white">You're in.</h1>
+            <p className="text-white/85 mb-8">
               Your 72-hour rental has started. Enjoy the film.
             </p>
             <Button asChild size="lg">
@@ -71,8 +71,8 @@ export default function CheckoutSuccess() {
         )}
         {status === "pending" && (
           <>
-            <h1 className="font-display text-4xl mb-4">Payment pending</h1>
-            <p className="text-white/70 mb-8">
+            <h1 className="font-display text-4xl mb-4 text-white">Payment pending</h1>
+            <p className="text-white/85 mb-8">
               We haven't received confirmation yet. Refresh this page in a moment.
             </p>
             <Button asChild size="lg" variant="outline">
@@ -82,8 +82,8 @@ export default function CheckoutSuccess() {
         )}
         {status === "error" && (
           <>
-            <h1 className="font-display text-4xl mb-4">Something went wrong</h1>
-            <p className="text-white/70 mb-8">{errorMsg ?? "Please try again."}</p>
+            <h1 className="font-display text-4xl mb-4 text-white">Something went wrong</h1>
+            <p className="text-white/85 mb-8">{errorMsg ?? "Please try again."}</p>
             <Button asChild size="lg" variant="outline">
               <Link to="/">Back to film</Link>
             </Button>

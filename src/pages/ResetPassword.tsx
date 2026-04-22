@@ -32,16 +32,16 @@ export default function ResetPassword() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background hero-bg">
+    <div className="min-h-screen flex flex-col stage-light">
       <SiteHeader />
       <main className="flex-1 flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-sm reveal">
-          <h1 className="font-display text-3xl font-semibold display-tracking mb-2">Set a new password</h1>
-          <p className="text-muted-foreground mb-8">Pick something only you would know.</p>
+          <h1 className="font-display text-3xl font-semibold display-tracking mb-2 text-white">Set a new password</h1>
+          <p className="text-white/85 mb-8">Pick something only you would know.</p>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="password">New password</Label>
-              <Input id="password" type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className="bg-surface" />
+              <Label htmlFor="password" className="text-white">New password</Label>
+              <Input id="password" type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className="bg-surface text-card-foreground" />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Saving…" : "Update password"}
