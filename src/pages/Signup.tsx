@@ -66,33 +66,33 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background hero-bg">
+    <div className="min-h-screen flex flex-col stage-light">
       <SiteHeader />
       <main className="flex-1 flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-sm reveal">
-          <h1 className="font-display text-3xl font-semibold display-tracking mb-2">Create your account</h1>
-          <p className="text-muted-foreground mb-8">Takes about 30 seconds.</p>
+          <h1 className="font-display text-3xl font-semibold display-tracking mb-2 text-white">Create your account</h1>
+          <p className="text-white/85 mb-8">Takes about 30 seconds.</p>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Display name</Label>
-              <Input id="name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Optional" className="bg-surface" />
+              <Label htmlFor="name" className="text-white">Display name</Label>
+              <Input id="name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Optional" className="bg-surface text-card-foreground" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="bg-surface" />
+              <Label htmlFor="email" className="text-white">Email</Label>
+              <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="bg-surface text-card-foreground" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className="bg-surface" />
-              <p className="text-xs text-muted-foreground">8+ characters.</p>
+              <Label htmlFor="password" className="text-white">Password</Label>
+              <Input id="password" type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className="bg-surface text-card-foreground" />
+              <p className="text-xs text-white/75">8+ characters.</p>
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Creating…" : "Create account"}
             </Button>
           </form>
-          <p className="text-sm text-muted-foreground mt-6 text-center">
+          <p className="text-sm text-white/85 mt-6 text-center">
             Already have one?{" "}
-            <Link to={`/login${params.toString() ? `?${params.toString()}` : ""}`} className="text-primary hover:underline">
+            <Link to={`/login${params.toString() ? `?${params.toString()}` : ""}`} className="text-accent hover:underline">
               Sign in
             </Link>
           </p>

@@ -29,20 +29,20 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background hero-bg">
+    <div className="min-h-screen flex flex-col stage-light">
       <SiteHeader />
       <main className="flex-1 flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-sm reveal">
-          <h1 className="font-display text-3xl font-semibold display-tracking mb-2">Reset password</h1>
+          <h1 className="font-display text-3xl font-semibold display-tracking mb-2 text-white">Reset password</h1>
           {sent ? (
-            <p className="text-muted-foreground">Check your inbox for a reset link.</p>
+            <p className="text-white/85">Check your inbox for a reset link.</p>
           ) : (
             <>
-              <p className="text-muted-foreground mb-8">We'll email you a link.</p>
+              <p className="text-white/85 mb-8">We'll email you a link.</p>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="bg-surface" />
+                  <Label htmlFor="email" className="text-white">Email</Label>
+                  <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="bg-surface text-card-foreground" />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Sending…" : "Send reset link"}
@@ -50,8 +50,8 @@ export default function ForgotPassword() {
               </form>
             </>
           )}
-          <p className="text-sm text-muted-foreground mt-6 text-center">
-            <Link to="/login" className="hover:text-foreground">Back to sign in</Link>
+          <p className="text-sm text-white/85 mt-6 text-center">
+            <Link to="/login" className="hover:text-white">Back to sign in</Link>
           </p>
         </div>
       </main>

@@ -36,33 +36,33 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background hero-bg">
+    <div className="min-h-screen flex flex-col stage-light">
       <SiteHeader />
       <main className="flex-1 flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-sm reveal">
-          <h1 className="font-display text-3xl font-semibold display-tracking mb-2">Welcome back</h1>
-          <p className="text-muted-foreground mb-8">Sign in to access your rentals.</p>
+          <h1 className="font-display text-3xl font-semibold display-tracking mb-2 text-white">Welcome back</h1>
+          <p className="text-white/85 mb-8">Sign in to access your rentals.</p>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="bg-surface" />
+              <Label htmlFor="email" className="text-white">Email</Label>
+              <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="bg-surface text-card-foreground" />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link to="/forgot-password" className="text-xs text-muted-foreground hover:text-foreground">
+                <Label htmlFor="password" className="text-white">Password</Label>
+                <Link to="/forgot-password" className="text-xs text-white/85 hover:text-white">
                   Forgot?
                 </Link>
               </div>
-              <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="bg-surface" />
+              <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="bg-surface text-card-foreground" />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Signing in…" : "Sign in"}
             </Button>
           </form>
-          <p className="text-sm text-muted-foreground mt-6 text-center">
+          <p className="text-sm text-white/85 mt-6 text-center">
             Don't have an account?{" "}
-            <Link to={`/signup${params.toString() ? `?${params.toString()}` : ""}`} className="text-primary hover:underline">
+            <Link to={`/signup${params.toString() ? `?${params.toString()}` : ""}`} className="text-accent hover:underline">
               Create one
             </Link>
           </p>
