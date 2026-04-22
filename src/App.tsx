@@ -12,6 +12,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Library from "./pages/Library";
 import Watch from "./pages/Watch";
+import DevWatch from "./pages/DevWatch";
 import Account from "./pages/Account";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
 import CheckoutCancel from "./pages/CheckoutCancel";
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/checkout/cancel" element={<CheckoutCancel />} />
             <Route path="/library" element={<ProtectedRoute><Library /></ProtectedRoute>} />
             <Route path="/watch/:rentalId" element={<ProtectedRoute><Watch /></ProtectedRoute>} />
+            <Route path="/dev/watch" element={<DevWatch />} />
             <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
