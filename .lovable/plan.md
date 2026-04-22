@@ -1,59 +1,37 @@
 
 
-## Watch page → cinema mode
+## Move pricing out of code, into Stripe + the `films` table
 
-Goal: strip the watch page down so the player feels like a theater, not a webpage. Add an optional "lights down" red ambient background that kicks in once the movie is actually playing.
+Right now the price is hardcoded in `supabase/functions/create-checkout/index.ts` as `PRICE_ID`. Every Stripe product change = code edit. Let's fix that.
 
-### Changes to `src/pages/Watch.tsx`
+### The approach
 
-1. **Remove `<SiteHeader />`** from the page entirely. The site nav adds visual noise and competes with the player.
-2. **Replace it with a minimal floating top bar** that auto-hides:
-   - Left: small "← Library" link + film title
-   - Right: Cast button + rental countdown badge
-   - Lives in an absolutely-positioned bar over the page, fades out 3 seconds after the movie starts playing, and fades back in on mouse move or pause. Same UX pattern as Netflix / Apple TV.
-3. **Center the player** in the viewport (full viewport height, black background behind it) instead of the current container layout. The video gets the stage.
-4. **Track a `isPlaying` state** wired to the video's `play` / `pause` / `ended` events so the rest of the UI can react to it.
+Store the Stripe **price ID** on each film row in the database. The edge function reads it from there. Stripe owns the actual amount/currency; the DB just holds the pointer.
 
-### Cinema ambient background (the red theater idea)
+Your `films` table already has `price_cents` and `currency` columns — we'll add one more: `stripe_price_id`.
 
-Yes — this is a great touch and a known pattern (Apple TV does a subtle version). Recommendation: do it, but keep it tasteful so it doesn't fight the film's own colors.
+### Changes
 
-Approach:
-- Page background becomes deep black (`#05020a`) by default on this route only — overrides the global blue spotlight gradient.
-- When `isPlaying === true` AND `phase === "feature"` (so it doesn't trigger during the intro), fade in a **deep theater-red radial glow** behind the player:
-  - Two soft radial gradients, one from each side of the player, in a deep burgundy (`hsl(0 60% 18%)` fading to transparent).
-  - Very low intensity — think "exit sign glow at the edge of a dark theater," not "red alert."
-  - 1.2s ease-in fade when playback starts, fade out on pause.
-- Add a subtle vignette around the player edges so the screen feels framed by darkness.
+**1. Database migration**
+- Add `stripe_price_id text` column to `films`.
+- Backfill the current film's row with your new GBP price ID (you'll paste it in — must start with `price_`, not `prod_`).
 
-The intro clip stays on plain black so the red reveal coincides with the feature starting — adds a small "lights dimming, movie's starting" beat.
+**2. Edge function: `supabase/functions/create-checkout/index.ts`**
+- Remove the hardcoded `PRICE_ID` constant.
+- After auth, query `films` for the row matching `filmId` and read `stripe_price_id`.
+- Pass that into `stripe.checkout.sessions.create({ line_items: [{ price: filmRow.stripe_price_id, quantity: 1 }] })`.
+- Return a clear 400 if the film has no `stripe_price_id` set.
 
-### Layout sketch
+**3. Frontend display price (optional cleanup)**
+- `useFeaturedFilm.ts` already selects `price_gbp`. Keep using that for the UI label so the card shows £ without a Stripe round-trip.
+- The actual charged amount comes from Stripe via the `stripe_price_id` — single source of truth.
 
-```text
-┌─────────────────────────────────────────────┐
-│  ← Library   Film Title    [Cast] [2h 14m]  │  ← floating, auto-hides
-│                                             │
-│                                             │
-│         ┌───────────────────────┐           │
-│         │                       │           │
-│   red   │       VIDEO PLAYER    │   red     │  ← red ambient glow
-│   glow  │                       │   glow      only while playing
-│         └───────────────────────┘           │
-│                                             │
-│                                             │
-└─────────────────────────────────────────────┘
-        deep black page background
-```
+### Result
 
-### Files touched
+- New product in Stripe? → just update the `stripe_price_id` value on the film row in the Lovable Cloud table editor. No code deploy.
+- Display price stays driven by `price_gbp` on the row (or we can drop that column later and fetch from Stripe if you want zero duplication).
 
-- `src/pages/Watch.tsx` — remove header, add floating auto-hide bar, add `isPlaying` state, add cinema background wrapper
-- No CSS file changes needed; all styling done with Tailwind + inline gradients scoped to this page so the rest of the site keeps the blue brand look
+### What I need from you
 
-### What I'm not changing
-
-- Playback logic, resume behavior, intro flow, casting — all stay exactly as they are
-- No edge function or DB changes — pure frontend
-- No global theme changes — the red/black is scoped to `/watch/*` only
+The new GBP **price ID** from Stripe (starts with `price_`, found under your product's Pricing section). I'll put it in the migration as the backfill value.
 
