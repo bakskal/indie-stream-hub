@@ -32,9 +32,9 @@ export function NewsletterCard() {
   return (
     <section className="container max-w-3xl py-10">
       <div className="rounded-2xl bg-white text-card-foreground shadow-card px-8 py-10 text-center">
-        <p className="text-[11px] tracking-[0.3em] text-muted-foreground font-medium">NEWSLETTER</p>
+        <p className="text-[11px] tracking-[0.3em] text-card-foreground/60 font-medium">NEWSLETTER</p>
         <h2 className="font-display text-3xl md:text-4xl mt-3">Join to Our Mailing List</h2>
-        <p className="text-muted-foreground mt-3 max-w-md mx-auto text-sm">
+        <p className="text-card-foreground/70 mt-3 max-w-md mx-auto text-sm">
           Enter your email to hear about new releases, premieres, and updates from Rock On Motion Pictures.
         </p>
         <form onSubmit={handleSubscribe} className="mt-6 flex max-w-md mx-auto gap-2">
@@ -44,7 +44,7 @@ export function NewsletterCard() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter your email"
-            className="bg-input border-border text-card-foreground placeholder:text-muted-foreground/70"
+            className="bg-input border-border text-card-foreground placeholder:text-card-foreground/50"
           />
           <Button
             type="submit"

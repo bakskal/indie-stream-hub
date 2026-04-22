@@ -38,6 +38,7 @@ export function RentalAccessCard({ filmId, price, rentalWindowHours }: Props) {
     style: "currency",
     currency: "USD",
   }).format(price);
+  const priceLabel = `${formatted} USD`;
 
   const handleRent = async () => {
     if (!user) {
@@ -86,7 +87,7 @@ export function RentalAccessCard({ filmId, price, rentalWindowHours }: Props) {
       <div className="rounded-2xl bg-primary text-primary-foreground p-5 flex items-center justify-between gap-4">
         <div>
           <p className="text-[10px] tracking-[0.25em] text-white/70 font-medium">RENTAL ACCESS</p>
-          <p className="font-display text-3xl mt-1">{formatted}</p>
+          <p className="font-display text-3xl mt-1">{priceLabel}</p>
         </div>
         <Button
           onClick={handleRent}
