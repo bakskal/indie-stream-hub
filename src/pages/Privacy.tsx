@@ -107,10 +107,10 @@ export default function Privacy() {
           <p className="mt-4 text-[15px] leading-relaxed text-card-foreground/80">
             Questions or requests about this policy? Email{" "}
             <a
-              href="mailto:info@rockonmotionpictures.com"
+              href="mailto:rockonmotionpictures@gmail.com"
               className="text-primary underline underline-offset-2 hover:opacity-80"
             >
-              info@rockonmotionpictures.com
+              rockonmotionpictures@gmail.com
             </a>
             .
           </p>
