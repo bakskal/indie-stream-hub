@@ -84,6 +84,7 @@ export default function Watch() {
   const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState<"intro" | "feature">("feature");
   const [castReady, setCastReady] = useState(false);
+  const [isCasting, setIsCasting] = useState(false);
   const [airplayAvailable, setAirplayAvailable] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [chromeVisible, setChromeVisible] = useState(true);
