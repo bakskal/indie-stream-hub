@@ -84,6 +84,7 @@ export default function Watch() {
   const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState<"intro" | "feature">("feature");
   const [castReady, setCastReady] = useState(false);
+  const [isCasting, setIsCasting] = useState(false);
   const [airplayAvailable, setAirplayAvailable] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [chromeVisible, setChromeVisible] = useState(true);
@@ -278,7 +279,7 @@ export default function Watch() {
               };
             };
             CastContextEventType: { CAST_STATE_CHANGED: string };
-            CastState: { NO_DEVICES_AVAILABLE: string };
+            CastState: { NO_DEVICES_AVAILABLE: string; CONNECTED: string };
           };
         };
         chrome: {
@@ -291,9 +292,6 @@ export default function Watch() {
       try {
         const ctx = w.cast.framework.CastContext.getInstance();
         ctx.setOptions({
-          // CC1AD845 = the official Default Media Receiver (CAF). Handles
-          // HLS with fMP4 segments correctly — the previous "default" constant
-          // sometimes resolved to a styled receiver that played audio only.
           receiverApplicationId: "CC1AD845",
           autoJoinPolicy: w.chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
         });
@@ -301,6 +299,7 @@ export default function Watch() {
         const update = () => {
           const state = ctx.getCastState();
           setCastReady(state !== w.cast.framework.CastState.NO_DEVICES_AVAILABLE);
+          setIsCasting(state === w.cast.framework.CastState.CONNECTED);
         };
         const onStateChange = () => update();
         ctx.addEventListener(
@@ -351,7 +350,7 @@ export default function Watch() {
       webkitShowPlaybackTargetPicker?: () => void;
     }) | null;
 
-    // Prefer AirPlay on Safari
+    // Prefer AirPlay on Safari (its picker handles connect AND disconnect)
     if (video && typeof video.webkitShowPlaybackTargetPicker === "function") {
       try {
         video.webkitShowPlaybackTargetPicker();
@@ -366,6 +365,7 @@ export default function Watch() {
           CastContext: {
             getInstance: () => {
               requestSession: () => Promise<unknown>;
+              endCurrentSession: (stopCasting: boolean) => void;
               getCurrentSession: () => null | {
                 loadMedia: (req: unknown) => Promise<unknown>;
               };
@@ -394,8 +394,20 @@ export default function Watch() {
     };
     if (!w.cast || !w.chrome) return;
 
+    const ctx = w.cast.framework.CastContext.getInstance();
+
+    // Already casting? Stop and return control to the local player.
+    if (isCasting) {
+      try {
+        ctx.endCurrentSession(true);
+        videoRef.current?.play().catch(() => {/* user gesture may be needed */});
+      } catch (err) {
+        console.error("Stop cast failed", err);
+      }
+      return;
+    }
+
     try {
-      const ctx = w.cast.framework.CastContext.getInstance();
       let session = ctx.getCurrentSession();
       if (!session) {
         await ctx.requestSession();
@@ -409,9 +421,6 @@ export default function Watch() {
       );
       mediaInfo.streamType = w.chrome.cast.media.StreamType.BUFFERED;
       // Cloudflare Stream serves HLS with fragmented MP4 segments.
-      // Without this hint the receiver falls back to a TS demuxer which
-      // can decode the audio track but drops the video — the exact
-      // "audio only on Chromecast" symptom.
       const fmp4 = w.chrome.cast.media.HlsSegmentFormat?.FMP4 ?? "fmp4";
       const fmp4v = w.chrome.cast.media.HlsVideoSegmentFormat?.FMP4 ?? "fmp4";
       mediaInfo.hlsSegmentFormat = fmp4;
@@ -428,7 +437,6 @@ export default function Watch() {
       req.currentTime = videoRef.current ? Math.floor(videoRef.current.currentTime) : 0;
       req.autoplay = true;
 
-      // Pause local playback while casting
       videoRef.current?.pause();
       await session.loadMedia(req);
     } catch (err) {
@@ -562,11 +570,15 @@ export default function Watch() {
                   variant="outline"
                   size="sm"
                   onClick={handleCastClick}
-                  title="Cast to a device on your network"
-                  className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
+                  title={isCasting ? "Stop casting" : "Cast to a device on your network"}
+                  className={
+                    isCasting
+                      ? "bg-primary/90 border-primary/40 text-primary-foreground hover:bg-primary"
+                      : "bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
+                  }
                 >
                   <Cast className="h-4 w-4 mr-2" />
-                  Cast
+                  {isCasting ? "Stop casting" : "Cast"}
                 </Button>
               ) : null}
               <Badge className="bg-white/10 text-white border-white/20 hover:bg-white/15">
