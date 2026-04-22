@@ -16,17 +16,35 @@ export function SiteHeader() {
   return (
     <header className="relative z-30">
       <div className="container flex items-center justify-between gap-6 pt-6 pb-4">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-3 shrink-0">
-          <img src={logo} alt="Rock On Motion Pictures" className="h-14 w-auto" />
-          <div className="hidden sm:flex flex-col leading-none">
-            <span className="font-sans text-base md:text-lg tracking-[0.18em] text-white/95 font-medium">
-              ROCK ON MOTION PICTURES
-            </span>
-            <span className="text-[10px] tracking-[0.3em] text-white/60 mt-1 italic font-display">
+        {/* Logo with spotlight beam */}
+        <Link to="/" className="flex items-center gap-4 shrink-0 group">
+          <div className="relative">
+            <img
+              src={logo}
+              alt="Rock On Motion Pictures"
+              className="h-16 w-auto relative z-10 drop-shadow-[0_0_18px_rgba(120,200,255,0.55)]"
+            />
+            {/* Spotlight beam pointing down from logo */}
+            <div
+              className="absolute left-1/2 top-full -translate-x-1/2 pointer-events-none"
+              style={{
+                width: "180px",
+                height: "70px",
+                background:
+                  "linear-gradient(180deg, hsla(200, 95%, 75%, 0.55) 0%, hsla(200, 90%, 70%, 0.18) 50%, transparent 100%)",
+                clipPath: "polygon(35% 0, 65% 0, 100% 100%, 0 100%)",
+                filter: "blur(6px)",
+                marginTop: "-6px",
+              }}
+            />
+            {/* "Let There Be Light" tagline under spotlight */}
+            <span className="absolute left-1/2 -translate-x-1/2 top-[calc(100%+30px)] whitespace-nowrap font-display text-[11px] tracking-[0.15em] text-white/90 italic">
               Let There Be Light
             </span>
           </div>
+          <span className="hidden sm:inline font-sans text-base md:text-lg tracking-[0.18em] text-white/95 font-medium">
+            ROCK ON MOTION PICTURES
+          </span>
         </Link>
 
         {/* Nav pill */}
