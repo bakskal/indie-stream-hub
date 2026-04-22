@@ -509,7 +509,7 @@ export default function Watch() {
     };
   }, [isPlaying]);
 
-  const showCastButton = castReady || airplayAvailable;
+  const showCastButton = castReady || castSdkLoaded || airplayAvailable;
   const showAndroidHelper = platform.isAndroid && !showCastButton;
   const isAirplay = platform.isIOS && airplayAvailable;
   const ambientOn = isPlaying && phase === "feature";
