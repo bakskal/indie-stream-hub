@@ -597,16 +597,55 @@ export default function Watch() {
                   variant="outline"
                   size="sm"
                   onClick={handleCastClick}
-                  title={isCasting ? "Stop casting" : "Cast to a device on your network"}
+                  title={
+                    isAirplay
+                      ? "AirPlay to a device on your network"
+                      : isCasting
+                        ? "Stop casting"
+                        : "Cast to a device on your network"
+                  }
                   className={
                     isCasting
                       ? "bg-primary/90 border-primary/40 text-primary-foreground hover:bg-primary"
                       : "bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
                   }
                 >
-                  <Cast className="h-4 w-4 mr-2" />
-                  {isCasting ? "Stop casting" : "Cast"}
+                  {isAirplay ? (
+                    <AirplayIcon className="h-4 w-4 mr-2" />
+                  ) : (
+                    <Cast className="h-4 w-4 mr-2" />
+                  )}
+                  {isAirplay ? "AirPlay" : isCasting ? "Stop casting" : "Cast"}
                 </Button>
+              ) : null}
+              {showAndroidHelper ? (
+                <Popover open={androidHelperOpen} onOpenChange={setAndroidHelperOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      title="How to cast on Android"
+                      className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
+                    >
+                      <Cast className="h-4 w-4 mr-2" />
+                      Cast
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    align="end"
+                    sideOffset={8}
+                    className="w-72 bg-black/90 border-white/15 text-white backdrop-blur"
+                  >
+                    <p className="text-sm leading-relaxed">
+                      To cast this video, tap Chrome's <span className="font-semibold">⋮</span> menu
+                      and choose <span className="font-semibold">Cast…</span>
+                    </p>
+                    <p className="mt-2 text-xs text-white/60">
+                      Mobile browsers don't allow in-page casting, so this has to be done from
+                      Chrome's menu.
+                    </p>
+                  </PopoverContent>
+                </Popover>
               ) : null}
               <Badge className="bg-white/10 text-white border-white/20 hover:bg-white/15">
                 {formatRemaining(playback.expires_at)}
