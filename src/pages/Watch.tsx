@@ -1,11 +1,24 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Hls from "hls.js";
-import { Cast } from "lucide-react";
+import { Cast, AirplayIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
+function detectPlatform() {
+  if (typeof navigator === "undefined") {
+    return { isIOS: false, isAndroid: false, isMobile: false };
+  }
+  const ua = navigator.userAgent || "";
+  const isIPadOS =
+    /Macintosh/.test(ua) && typeof document !== "undefined" && "ontouchend" in document;
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || isIPadOS;
+  const isAndroid = /Android/.test(ua);
+  return { isIOS, isAndroid, isMobile: isIOS || isAndroid };
+}
 
 interface PlaybackResponse {
   title: string;
@@ -88,7 +101,10 @@ export default function Watch() {
   const [airplayAvailable, setAirplayAvailable] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [chromeVisible, setChromeVisible] = useState(true);
+  const [androidHelperOpen, setAndroidHelperOpen] = useState(false);
   const [, force] = useState(0);
+
+  const platform = useMemo(() => detectPlatform(), []);
 
   const lastSavedRef = useRef(0);
   const featureStartedRef = useRef(false);
@@ -328,9 +344,18 @@ export default function Watch() {
     }) | null;
     if (!video) return;
     if (typeof video.webkitShowPlaybackTargetPicker !== "function") return;
+
+    // On iOS the availability event is unreliable (often only fires after the
+    // picker is opened). Surface the AirPlay button immediately so users on
+    // iPhone/iPad can reach it; iOS handles "no devices" with its own UI.
+    if (platform.isIOS) {
+      setAirplayAvailable(true);
+    }
+
     const onChange = (e: Event) => {
       const detail = (e as unknown as { availability?: string }).availability;
-      setAirplayAvailable(detail === "available");
+      if (detail === "available") setAirplayAvailable(true);
+      else if (!platform.isIOS) setAirplayAvailable(false);
     };
     video.addEventListener(
       "webkitplaybacktargetavailabilitychanged" as keyof HTMLVideoElementEventMap,
@@ -342,7 +367,7 @@ export default function Watch() {
         onChange as EventListener,
       );
     };
-  }, [playback]);
+  }, [playback, platform.isIOS]);
 
   const handleCastClick = async () => {
     if (!playback) return;
@@ -475,6 +500,8 @@ export default function Watch() {
   }, [isPlaying]);
 
   const showCastButton = castReady || airplayAvailable;
+  const showAndroidHelper = platform.isAndroid && !showCastButton;
+  const isAirplay = platform.isIOS && airplayAvailable;
   const ambientOn = isPlaying && phase === "feature";
 
   return (
@@ -570,16 +597,55 @@ export default function Watch() {
                   variant="outline"
                   size="sm"
                   onClick={handleCastClick}
-                  title={isCasting ? "Stop casting" : "Cast to a device on your network"}
+                  title={
+                    isAirplay
+                      ? "AirPlay to a device on your network"
+                      : isCasting
+                        ? "Stop casting"
+                        : "Cast to a device on your network"
+                  }
                   className={
                     isCasting
                       ? "bg-primary/90 border-primary/40 text-primary-foreground hover:bg-primary"
                       : "bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
                   }
                 >
-                  <Cast className="h-4 w-4 mr-2" />
-                  {isCasting ? "Stop casting" : "Cast"}
+                  {isAirplay ? (
+                    <AirplayIcon className="h-4 w-4 mr-2" />
+                  ) : (
+                    <Cast className="h-4 w-4 mr-2" />
+                  )}
+                  {isAirplay ? "AirPlay" : isCasting ? "Stop casting" : "Cast"}
                 </Button>
+              ) : null}
+              {showAndroidHelper ? (
+                <Popover open={androidHelperOpen} onOpenChange={setAndroidHelperOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      title="How to cast on Android"
+                      className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
+                    >
+                      <Cast className="h-4 w-4 mr-2" />
+                      Cast
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    align="end"
+                    sideOffset={8}
+                    className="w-72 bg-black/90 border-white/15 text-white backdrop-blur"
+                  >
+                    <p className="text-sm leading-relaxed">
+                      To cast this video, tap Chrome's <span className="font-semibold">⋮</span> menu
+                      and choose <span className="font-semibold">Cast…</span>
+                    </p>
+                    <p className="mt-2 text-xs text-white/60">
+                      Mobile browsers don't allow in-page casting, so this has to be done from
+                      Chrome's menu.
+                    </p>
+                  </PopoverContent>
+                </Popover>
               ) : null}
               <Badge className="bg-white/10 text-white border-white/20 hover:bg-white/15">
                 {formatRemaining(playback.expires_at)}
