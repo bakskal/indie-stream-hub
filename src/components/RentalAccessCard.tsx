@@ -8,8 +8,9 @@ import { supabase } from "@/lib/supabase";
 
 interface Props {
   filmId: string;
-  priceCents: number;
-  currency: string;
+  /** Price in USD (numeric, e.g. 6.99). */
+  price: number;
+  /** Display-only — DB schema does not store this. */
   rentalWindowHours: number;
 }
 
@@ -21,12 +22,7 @@ function formatRemaining(expiresAt: string): string {
   return hours >= 1 ? `${hours}h ${minutes}m left` : `${minutes}m left`;
 }
 
-/**
- * The "Rental Access" card on the landing page.
- * - Visitors / signed-in users without an active rental: see price + Rent CTA
- * - Users with an active rental: see "Enjoy" + Watch movie CTA, with countdown
- */
-export function RentalAccessCard({ filmId, priceCents, currency, rentalWindowHours }: Props) {
+export function RentalAccessCard({ filmId, price, rentalWindowHours }: Props) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { rental, loading } = useActiveRental(filmId);
@@ -40,8 +36,8 @@ export function RentalAccessCard({ filmId, priceCents, currency, rentalWindowHou
 
   const formatted = new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: currency.toUpperCase(),
-  }).format(priceCents / 100);
+    currency: "USD",
+  }).format(price);
 
   const handleRent = async () => {
     if (!user) {
@@ -63,7 +59,6 @@ export function RentalAccessCard({ filmId, priceCents, currency, rentalWindowHou
     }
   };
 
-  // ACTIVE RENTAL — show "Enjoy" / Watch movie
   if (rental && !loading) {
     return (
       <div className="space-y-3">
@@ -86,7 +81,6 @@ export function RentalAccessCard({ filmId, priceCents, currency, rentalWindowHou
     );
   }
 
-  // NO RENTAL — show price + Rent CTA
   return (
     <div className="space-y-3">
       <div className="rounded-2xl bg-primary text-primary-foreground p-5 flex items-center justify-between gap-4">

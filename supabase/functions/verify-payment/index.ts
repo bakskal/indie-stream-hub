@@ -8,6 +8,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+/** Hardcoded rental window — DB schema doesn't store it. */
+const RENTAL_WINDOW_HOURS = 72;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -48,57 +51,46 @@ serve(async (req) => {
     if (!metaUserId || !filmId) throw new Error("Missing session metadata");
     if (metaUserId !== user.id) throw new Error("Session does not belong to user");
 
-    // Service-role client to bypass RLS for rental creation
+    // Service-role client to bypass RLS for purchase creation
     const admin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
-    // Idempotency: return existing rental if we've already processed this session
+    // Idempotency: return existing purchase if we've already processed this session
     const { data: existing } = await admin
-      .from("rentals")
+      .from("purchases")
       .select("id")
       .eq("stripe_session_id", sessionId)
       .maybeSingle();
 
     if (existing) {
       return new Response(
-        JSON.stringify({ status: "paid", rentalId: existing.id }),
+        JSON.stringify({ status: "paid", rentalId: (existing as { id: string }).id }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
       );
     }
 
-    // Look up the film for the rental window
-    const { data: film, error: filmErr } = await admin
-      .from("films")
-      .select("id, rental_window_hours, currency")
-      .eq("id", filmId)
-      .single();
-    if (filmErr || !film) throw new Error("Film not found");
-
     const purchasedAt = new Date();
     const expiresAt = new Date(
-      purchasedAt.getTime() + film.rental_window_hours * 60 * 60 * 1000,
+      purchasedAt.getTime() + RENTAL_WINDOW_HOURS * 60 * 60 * 1000,
     );
 
-    const { data: rental, error: insertErr } = await admin
-      .from("rentals")
+    const { data: purchase, error: insertErr } = await admin
+      .from("purchases")
       .insert({
         user_id: user.id,
-        film_id: film.id,
+        film_id: filmId,
         stripe_session_id: sessionId,
-        amount_cents: session.amount_total ?? null,
-        currency: (session.currency ?? film.currency) || "usd",
         purchased_at: purchasedAt.toISOString(),
         expires_at: expiresAt.toISOString(),
-        status: "active",
       })
       .select("id")
       .single();
     if (insertErr) throw insertErr;
 
     return new Response(
-      JSON.stringify({ status: "paid", rentalId: rental.id }),
+      JSON.stringify({ status: "paid", rentalId: (purchase as { id: string }).id }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
     );
   } catch (error) {

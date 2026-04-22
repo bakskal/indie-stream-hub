@@ -1,10 +1,12 @@
 // External Supabase client — points at the client-owned Supabase project.
-// This REPLACES src/integrations/supabase/client.ts for all app code.
-// The Lovable Cloud auto-managed client is now orphaned.
 //
-// URL + anon key are safe to ship in the browser bundle (RLS protects data).
+// NOTE: Intentionally untyped. The auto-generated `Database` type in
+// src/integrations/supabase/types.ts reflects the (now-orphaned) Lovable
+// Cloud schema, NOT the client's real Supabase project. Using it here would
+// produce false type errors on every query. RLS still protects the data;
+// we just lose compile-time row typing and rely on hand-written interfaces
+// in each hook/component.
 import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
 
 const SUPABASE_URL = "https://dhbyembenuuscgqwbpwq.supabase.co";
 const SUPABASE_ANON_KEY =
@@ -12,7 +14,7 @@ const SUPABASE_ANON_KEY =
 
 export const SUPABASE_PROJECT_URL = SUPABASE_URL;
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,

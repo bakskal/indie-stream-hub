@@ -1,22 +1,26 @@
 # Client Supabase Deployment Walkthrough
 
-The frontend is now wired to the client's Supabase project (`dhbyembenuuscgqwbpwq.supabase.co`). Three things still need to be done **inside that Supabase project** before the app fully works.
+The frontend is wired to the client's Supabase project (`dhbyembenuuscgqwbpwq.supabase.co`). The database schema and seed data already exist there — only **two things** still need to happen.
 
 ---
 
-## 1. Run the database schema
+## 1. Schema is already in place
 
-1. Open the Supabase dashboard → **SQL Editor** → **+ New query**.
-2. Paste the entire contents of [`deploy/01-schema.sql`](./01-schema.sql).
-3. Click **Run**. You should see "Success. No rows returned."
+The client's Supabase project already has the following tables (no SQL to run):
 
-This creates: `profiles`, `user_roles`, `films`, `rentals`, `watch_history`, `newsletter_subscribers`, plus the RLS policies, the `handle_new_user` trigger, and a placeholder `films` row.
+| Table | Purpose |
+|---|---|
+| `films` | Catalog. Columns: `title`, `description`, `thumbnail_url`, `video_asset_id` (full Cloudflare HLS URL), `price` (USD numeric), `price_gbp`, `price_inr` |
+| `users` | App-level user record. Columns: `email`, `role` |
+| `purchases` | Rental records. Columns: `user_id`, `film_id`, `stripe_session_id`, `purchased_at`, `expires_at` |
+| `watch_history` | Resume position. Columns: `user_id`, `film_id`, `progress_seconds`, `last_watched_at` |
+| `newsletter_subscribers` | Email list. Columns: `email`, `subscribed_at` |
 
-After it runs, go to **Table Editor → films** and update the row:
-- `title`, `tagline`, `synopsis`, `runtime_seconds`
-- `feature_stream_id` (Cloudflare Stream UID for the full feature)
-- `trailer_stream_id` (Cloudflare Stream UID for the trailer)
-- `poster_url`
+**Hardcoded in app code** (not stored in DB):
+- Rental window: **72 hours** (`RENTAL_WINDOW_HOURS` in `src/hooks/useFeaturedFilm.ts` and `supabase/functions/verify-payment/index.ts`)
+- Trailer: YouTube ID `xPK_ScLIAxQ` (`TRAILER_YOUTUBE_ID` in `src/pages/Index.tsx`)
+
+If those need to change later, edit the constants in those files.
 
 ---
 
@@ -24,14 +28,12 @@ After it runs, go to **Table Editor → films** and update the row:
 
 In the Supabase dashboard → **Authentication → URL Configuration**:
 
-- **Site URL**: `https://your-production-domain.com` (or your Lovable preview URL during dev)
+- **Site URL**: `https://your-production-domain.com` (or the Lovable preview URL during dev)
 - **Redirect URLs**: add both
   - `https://your-production-domain.com/**`
-  - `http://localhost:5173/**` (for local dev)
+  - `http://localhost:5173/**`
 
-In **Authentication → Providers → Email**:
-- Enable **Email** provider.
-- For testing, you can disable "Confirm email" temporarily. **Re-enable it before launch.**
+In **Authentication → Providers → Email**: enable **Email** provider. For testing you can disable "Confirm email" temporarily — re-enable before launch.
 
 ---
 
@@ -40,10 +42,7 @@ In **Authentication → Providers → Email**:
 You need the [Supabase CLI](https://supabase.com/docs/guides/cli) installed locally.
 
 ```bash
-# Log in once
 supabase login
-
-# Link this repo to the client's project
 supabase link --project-ref dhbyembenuuscgqwbpwq
 ```
 
@@ -55,7 +54,7 @@ In the Supabase dashboard → **Edge Functions → Manage secrets**, add:
 |---|---|
 | `STRIPE_SECRET_KEY` | The Stripe secret key (`sk_live_...` or `sk_test_...`) |
 
-Note: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` are auto-provided to all edge functions — no need to set those manually.
+`SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` are auto-provided to all edge functions.
 
 ### 3b. Deploy each function
 
@@ -67,20 +66,35 @@ supabase functions deploy verify-payment
 supabase functions deploy get-stream-playback
 ```
 
-All three are configured with `verify_jwt = true` in [`supabase/config.toml`](../supabase/config.toml) — the CLI picks that up automatically.
-
-### 3c. Configure Stripe webhook (optional but recommended)
-
-For now the app uses `verify-payment` (called from the success page) to confirm payments. This works for the happy path. If you want to handle edge cases like users closing the browser before the success page loads, add a Stripe webhook later — not required for launch.
+What each one does (against the **`purchases`** table, not `rentals`):
+- `create-checkout` — creates a Stripe Checkout session, attaches `user_id` + `film_id` as metadata.
+- `verify-payment` — called from the success page; on a paid session, inserts a `purchases` row with `expires_at = now + 72h`.
+- `get-stream-playback` — verifies the caller owns an unexpired purchase, then returns the film's `video_asset_id` (HLS URL) for playback.
 
 ---
 
-## 4. Test the full flow
+## 4. RLS policies you'll want on the client's project
+
+The frontend assumes these policies exist. Verify in the Supabase dashboard → **Authentication → Policies**:
+
+- `films` — public SELECT (anyone can read the catalog).
+- `purchases` — SELECT only where `auth.uid() = user_id`. INSERT/UPDATE only via service-role (the edge functions).
+- `watch_history` — SELECT/INSERT/UPDATE only where `auth.uid() = user_id`.
+- `newsletter_subscribers` — public INSERT only (no SELECT for normal users).
+- `users` — SELECT only where `auth.uid() = id` (if used at all).
+
+If any of these are missing, the app will get 401/403 errors against that table.
+
+---
+
+## 5. Test the full flow
 
 1. Visit the site, click **Rent now**, sign up.
 2. Use Stripe test card `4242 4242 4242 4242`, any future date, any CVC.
-3. After redirect you should land on `/checkout/success`, then `/watch/:rentalId`.
-4. Confirm a row appears in **Table Editor → rentals** with `status = active`.
+3. After redirect you should land on `/checkout/success`, then `/watch/:purchaseId`.
+4. Confirm a row appears in **Table Editor → purchases**.
+
+You can also visit `/dev/watch` to play the feature directly (paywall bypassed) to verify the `video_asset_id` URL streams correctly.
 
 ---
 
@@ -89,9 +103,9 @@ For now the app uses `verify-payment` (called from the success page) to confirm 
 | Piece | Hosted on |
 |---|---|
 | Frontend (this repo) | Lovable / Vercel / wherever you publish |
-| Supabase database + auth | Client's Supabase (`dhbyembenuuscgqwbpwq`) |
+| Database + auth | Client's Supabase (`dhbyembenuuscgqwbpwq`) |
 | Edge functions | Client's Supabase |
 | Stripe | Your Stripe account |
 | Video streams | Cloudflare Stream (`customer-mkfuixutdaumge7k`) |
 
-The Lovable Cloud Supabase project is no longer used by the app — it can be ignored.
+The Lovable Cloud Supabase project is no longer used by the app.

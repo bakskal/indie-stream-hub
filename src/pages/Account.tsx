@@ -11,33 +11,10 @@ import { toast } from "@/hooks/use-toast";
 
 export default function Account() {
   const { user, signOut } = useAuth();
-  const [displayName, setDisplayName] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
 
-  useEffect(() => { document.title = "Account — Indie Reel"; }, []);
-
-  useEffect(() => {
-    if (!user) return;
-    (async () => {
-      const { data } = await supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
-      setDisplayName(data?.display_name ?? "");
-    })();
-  }, [user]);
-
-  const saveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-    setSavingProfile(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({ display_name: displayName })
-      .eq("id", user.id);
-    setSavingProfile(false);
-    if (error) toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
-    else toast({ title: "Profile saved" });
-  };
+  useEffect(() => { document.title = "Account — Rock On Motion Pictures"; }, []);
 
   const savePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,15 +42,12 @@ export default function Account() {
         </div>
 
         <Card className="bg-surface border-border">
-          <CardHeader><CardTitle className="font-display text-xl">Profile</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="font-display text-xl">Email</CardTitle></CardHeader>
           <CardContent>
-            <form onSubmit={saveProfile} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Display name</Label>
-                <Input id="name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="bg-background" />
-              </div>
-              <Button type="submit" disabled={savingProfile}>{savingProfile ? "Saving…" : "Save"}</Button>
-            </form>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email address</Label>
+              <Input id="email" value={user?.email ?? ""} readOnly className="bg-background" />
+            </div>
           </CardContent>
         </Card>
 

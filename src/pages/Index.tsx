@@ -4,10 +4,13 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { NewsletterCard } from "@/components/NewsletterCard";
 import { RentalAccessCard } from "@/components/RentalAccessCard";
-import { useFeaturedFilm } from "@/hooks/useFeaturedFilm";
+import { useFeaturedFilm, RENTAL_WINDOW_HOURS } from "@/hooks/useFeaturedFilm";
 import { useActiveRental } from "@/hooks/useActiveRental";
 import { Button } from "@/components/ui/button";
 import poster from "@/assets/movie-poster.png";
+
+/** Trailer is a fixed YouTube embed (not stored in DB). */
+const TRAILER_YOUTUBE_ID = "xPK_ScLIAxQ";
 
 const Index = () => {
   const { film, loading } = useFeaturedFilm();
@@ -18,7 +21,7 @@ const Index = () => {
       ? `${film.title} — Rock On Motion Pictures`
       : "Rock On Motion Pictures";
     const desc =
-      film?.tagline ??
+      film?.description ??
       "Mr. Paanwala — a Vijay Bhola film. Rent the feature with a 72-hour streaming window.";
     let meta = document.querySelector('meta[name="description"]');
     if (!meta) {
@@ -65,38 +68,16 @@ const Index = () => {
               )}
             </div>
 
-            {/* Trailer — falls back to the canonical YouTube trailer if the DB hasn't been seeded yet */}
+            {/* Trailer — fixed YouTube embed */}
             <div className="rounded-xl overflow-hidden border border-white/15 shadow-card bg-black/30">
               <div className="aspect-video">
-                {(() => {
-                  const fallbackYouTubeId = "xPK_ScLIAxQ";
-                  const ytId = film?.trailer_stream_id?.startsWith("youtube:")
-                    ? film.trailer_stream_id.slice("youtube:".length)
-                    : !film?.trailer_stream_id
-                      ? fallbackYouTubeId
-                      : null;
-
-                  if (ytId) {
-                    return (
-                      <iframe
-                        src={`https://www.youtube-nocookie.com/embed/${ytId}?rel=0&modestbranding=1`}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        allowFullScreen
-                        className="w-full h-full"
-                        title={`${film?.title ?? "Mr. Paanwala"} trailer`}
-                      />
-                    );
-                  }
-                  return (
-                    <iframe
-                      src={`https://iframe.videodelivery.net/${film!.trailer_stream_id}`}
-                      allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-                      allowFullScreen
-                      className="w-full h-full"
-                      title={`${film!.title} trailer`}
-                    />
-                  );
-                })()}
+                <iframe
+                  src={`https://www.youtube-nocookie.com/embed/${TRAILER_YOUTUBE_ID}?rel=0&modestbranding=1`}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  className="w-full h-full"
+                  title={`${film?.title ?? "Mr. Paanwala"} trailer`}
+                />
               </div>
             </div>
           </div>
@@ -109,7 +90,7 @@ const Index = () => {
               <div>
                 <h2 className="font-display text-4xl">{film?.title ?? "Mr. Paanwala"}</h2>
                 <p className="mt-5 text-muted-foreground leading-relaxed text-[15px]">
-                  {film?.synopsis ??
+                  {film?.description ??
                     "Mr. Paanwala addresses the immigrant diaspora that struggles to define a new identity for themselves as they face the dilemma of progressing in the new environment and the one they grew up in. Mr. Paanwala is a story about love, family, career, marriage, and finding your true self. It explores the contrast between Lucknow's culture and the London lifestyle. Rooted and authentic, the film features outstanding theatre actors delivering powerful performances."}
                 </p>
 
@@ -117,9 +98,8 @@ const Index = () => {
                   {film && (
                     <RentalAccessCard
                       filmId={film.id}
-                      priceCents={film.price_cents}
-                      currency={film.currency}
-                      rentalWindowHours={film.rental_window_hours}
+                      price={film.price}
+                      rentalWindowHours={RENTAL_WINDOW_HOURS}
                     />
                   )}
                 </div>
@@ -127,7 +107,7 @@ const Index = () => {
 
               <div className="rounded-2xl overflow-hidden bg-muted">
                 <img
-                  src={poster}
+                  src={film?.thumbnail_url || poster}
                   alt="Mr. Paanwala poster"
                   loading="lazy"
                   className="w-full h-full object-cover aspect-[3/4]"

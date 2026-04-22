@@ -7,7 +7,10 @@ export interface ActiveRental {
   expires_at: string;
 }
 
-/** Returns the user's most-recent active, unexpired rental for a given film. */
+/**
+ * Returns the user's most-recent unexpired purchase for a given film.
+ * Backed by the `purchases` table in the client's Supabase schema.
+ */
 export function useActiveRental(filmId: string | undefined) {
   const { user } = useAuth();
   const [rental, setRental] = useState<ActiveRental | null>(null);
@@ -22,17 +25,16 @@ export function useActiveRental(filmId: string | undefined) {
     let cancelled = false;
     (async () => {
       const { data } = await supabase
-        .from("rentals")
-        .select("id, expires_at, status")
+        .from("purchases")
+        .select("id, expires_at")
         .eq("user_id", user.id)
         .eq("film_id", filmId)
-        .eq("status", "active")
         .order("purchased_at", { ascending: false })
         .limit(1)
         .maybeSingle();
       if (cancelled) return;
-      if (data && new Date(data.expires_at).getTime() > Date.now()) {
-        setRental({ id: data.id, expires_at: data.expires_at });
+      if (data && new Date((data as ActiveRental).expires_at).getTime() > Date.now()) {
+        setRental(data as ActiveRental);
       } else {
         setRental(null);
       }

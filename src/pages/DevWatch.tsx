@@ -8,43 +8,44 @@ import { Badge } from "@/components/ui/badge";
 
 /**
  * DEV-ONLY test playback page.
- * Loads the active film's feature_stream_id directly and plays it,
+ * Loads the first film's video_asset_id directly and plays it,
  * bypassing the rental paywall. Use to verify the stream works.
  * Route: /dev/watch
  */
 export default function DevWatch() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [title, setTitle] = useState<string>("");
-  const [streamId, setStreamId] = useState<string | null>(null);
+  const [src, setSrc] = useState<string | null>(null);
+  const [poster, setPoster] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    document.title = "Dev playback test — Indie Reel";
+    document.title = "Dev playback test — Rock On Motion Pictures";
     (async () => {
       const { data, error } = await supabase
         .from("films")
-        .select("title, feature_stream_id")
-        .eq("active", true)
+        .select("title, video_asset_id, thumbnail_url")
+        .order("created_at", { ascending: true })
         .limit(1)
         .maybeSingle();
       if (error || !data) {
-        setError(error?.message || "No active film found");
+        setError(error?.message || "No film found");
         return;
       }
-      if (!data.feature_stream_id) {
-        setError("Film has no feature_stream_id set");
+      const film = data as { title: string; video_asset_id: string | null; thumbnail_url: string | null };
+      if (!film.video_asset_id) {
+        setError("Film has no video_asset_id set");
         return;
       }
-      setTitle(data.title);
-      setStreamId(data.feature_stream_id);
+      setTitle(film.title);
+      setSrc(film.video_asset_id);
+      setPoster(film.thumbnail_url ?? undefined);
     })();
   }, []);
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !streamId) return;
-    const subdomain = "customer-mkfuixutdaumge7k.cloudflarestream.com";
-    const src = `https://${subdomain}/${streamId}/manifest/video.m3u8`;
+    if (!video || !src) return;
 
     if (Hls.isSupported()) {
       const hls = new Hls({ maxBufferLength: 30 });
@@ -55,12 +56,7 @@ export default function DevWatch() {
     if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = src;
     }
-  }, [streamId]);
-
-  const subdomain = "customer-mkfuixutdaumge7k.cloudflarestream.com";
-  const poster = streamId
-    ? `https://${subdomain}/${streamId}/thumbnails/thumbnail.jpg`
-    : undefined;
+  }, [src]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
