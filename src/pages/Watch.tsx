@@ -320,6 +320,7 @@ export default function Watch() {
           receiverApplicationId: "CC1AD845",
           autoJoinPolicy: w.chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
         });
+        setCastSdkLoaded(true);
 
         const update = () => {
           const state = ctx.getCastState();
