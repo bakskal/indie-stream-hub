@@ -14,7 +14,6 @@ export const SUPABASE_PROJECT_URL = SUPABASE_URL;
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
-    storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
   },
