@@ -140,11 +140,11 @@ export default function PressRelease() {
               <div className="flex items-center gap-3 mb-3">
                 <TypeBadge type={v.type} />
                 {v.outlet && (
-                  <span className="text-sm text-muted-foreground">{v.outlet}</span>
+                  <span className="text-sm text-card-foreground/65">{v.outlet}</span>
                 )}
               </div>
               <h3 className="font-display text-xl">{v.title}</h3>
-              <p className="text-sm text-muted-foreground mt-2">{v.summary}</p>
+              <p className="text-sm text-card-foreground/75 mt-2">{v.summary}</p>
               <div className="mt-4 rounded-xl overflow-hidden bg-muted aspect-video">
                 <iframe
                   src={v.embedUrl}
@@ -167,10 +167,10 @@ export default function PressRelease() {
             >
               <div className="flex items-center gap-3 mb-3">
                 <TypeBadge type={p.type} />
-                <span className="text-xs text-muted-foreground">{p.outlet}</span>
+                <span className="text-xs text-card-foreground/65">{p.outlet}</span>
               </div>
               <h3 className="font-display text-lg leading-snug">{p.title}</h3>
-              <p className="text-sm text-muted-foreground mt-3 flex-1">{p.summary}</p>
+              <p className="text-sm text-card-foreground/75 mt-3 flex-1">{p.summary}</p>
               <Button
                 asChild
                 size="sm"
