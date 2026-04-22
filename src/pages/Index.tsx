@@ -2,23 +2,24 @@ import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { RentButton } from "@/components/RentButton";
+import { NewsletterCard } from "@/components/NewsletterCard";
+import { RentalAccessCard } from "@/components/RentalAccessCard";
 import { useFeaturedFilm } from "@/hooks/useFeaturedFilm";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { useActiveRental } from "@/hooks/useActiveRental";
+import { Button } from "@/components/ui/button";
+import poster from "@/assets/movie-poster.png";
 
 const Index = () => {
   const { film, loading } = useFeaturedFilm();
+  const { rental } = useActiveRental(film?.id);
 
   useEffect(() => {
     document.title = film?.title
-      ? `${film.title} — Rent the film`
-      : "Indie Reel — Independent cinema, direct to you";
-    const desc = film?.tagline ?? "Rent the independent feature direct from the filmmakers. 72-hour streaming window.";
+      ? `${film.title} — Rock On Motion Pictures`
+      : "Rock On Motion Pictures";
+    const desc =
+      film?.tagline ??
+      "Mr. Paanwala — a Vijay Bhola film. Rent the feature with a 72-hour streaming window.";
     let meta = document.querySelector('meta[name="description"]');
     if (!meta) {
       meta = document.createElement("meta");
@@ -29,120 +30,106 @@ const Index = () => {
   }, [film]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background hero-bg">
+    <div className="min-h-screen flex flex-col stage-light">
       <SiteHeader />
 
       <main className="flex-1">
-        {/* Hero */}
-        <section className="relative grain overflow-hidden">
-          <div className="container max-w-3xl py-24 md:py-36 text-center reveal">
-            <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground mb-6">
-              An independent feature · Streaming now
-            </p>
-            <h1 className="font-display text-5xl md:text-7xl font-semibold display-tracking text-balance">
-              {loading ? "Loading…" : film?.title ?? "Untitled Feature"}
-            </h1>
-            {film?.tagline && (
-              <p className="mt-6 text-lg md:text-xl text-muted-foreground text-balance max-w-xl mx-auto">
-                {film.tagline}
+        {/* HERO — title + trailer side by side */}
+        <section className="container py-12 md:py-16">
+          <div className="grid md:grid-cols-2 gap-10 items-center reveal">
+            <div>
+              <span className="inline-block rounded-full bg-white/10 border border-white/15 px-4 py-1 text-[11px] tracking-[0.25em] text-white/80">
+                MR. PAANWALA
+              </span>
+              <h1 className="font-display text-5xl md:text-7xl mt-5 text-white text-balance">
+                {loading ? "Loading…" : film?.title ?? "Mr. Paanwala"}
+              </h1>
+              <p className="mt-4 text-white/75 max-w-md">
+                Preview the trailer. Exclusive Access. One Powerful Story. Watch It First.
               </p>
-            )}
-            <div className="mt-12">
-              {film && (
-                <RentButton
-                  filmId={film.id}
-                  priceCents={film.price_cents}
-                  currency={film.currency}
-                  rentalWindowHours={film.rental_window_hours}
-                />
+              {rental ? (
+                <Button
+                  asChild
+                  className="mt-8 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 px-6 h-11"
+                >
+                  <Link to={`/watch/${rental.id}`}>Resume watching</Link>
+                </Button>
+              ) : (
+                <Button
+                  asChild
+                  variant="outline"
+                  className="mt-8 rounded-md bg-white/5 border-white/20 text-white hover:bg-white/10 px-6 h-11"
+                >
+                  <a href="#about-film">Learn more</a>
+                </Button>
               )}
+            </div>
+
+            {/* Trailer */}
+            <div className="rounded-xl overflow-hidden border border-white/15 shadow-card bg-black/30">
+              <div className="aspect-video">
+                {film?.trailer_stream_id?.startsWith("youtube:") ? (
+                  <iframe
+                    src={`https://www.youtube-nocookie.com/embed/${film.trailer_stream_id.slice("youtube:".length)}?rel=0&modestbranding=1`}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    className="w-full h-full"
+                    title={`${film.title} trailer`}
+                  />
+                ) : film?.trailer_stream_id ? (
+                  <iframe
+                    src={`https://iframe.videodelivery.net/${film.trailer_stream_id}`}
+                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                    allowFullScreen
+                    className="w-full h-full"
+                    title={`${film.title} trailer`}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-white/60 text-sm">
+                    Trailer loading…
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </section>
 
-        {/* Poster / Trailer */}
-        <section className="container max-w-4xl pb-24">
-          <div className="aspect-video rounded-lg overflow-hidden border border-border bg-surface relative shadow-elegant">
-            {film?.trailer_stream_id?.startsWith("youtube:") ? (
-              <iframe
-                src={`https://www.youtube-nocookie.com/embed/${film.trailer_stream_id.slice("youtube:".length)}?rel=0&modestbranding=1`}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-                className="w-full h-full"
-                title={`${film.title} trailer`}
-              />
-            ) : film?.trailer_stream_id ? (
-              <iframe
-                src={`https://iframe.videodelivery.net/${film.trailer_stream_id}`}
-                allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-                allowFullScreen
-                className="w-full h-full"
-                title={`${film.title} trailer`}
-              />
-            ) : film?.poster_url ? (
-              <img
-                src={film.poster_url}
-                alt={`${film.title} poster`}
-                loading="lazy"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
-                Trailer will appear here once the Cloudflare Stream video ID is added.
+        {/* SYNOPSIS CARD */}
+        <section id="about-film" className="container max-w-5xl py-10">
+          <div className="rounded-3xl bg-white text-card-foreground shadow-card p-8 md:p-10">
+            <div className="grid md:grid-cols-[1fr_320px] gap-8 items-start">
+              <div>
+                <h2 className="font-display text-4xl">{film?.title ?? "Mr. Paanwala"}</h2>
+                <p className="mt-5 text-muted-foreground leading-relaxed text-[15px]">
+                  {film?.synopsis ??
+                    "Mr. Paanwala addresses the immigrant diaspora that struggles to define a new identity for themselves as they face the dilemma of progressing in the new environment and the one they grew up in. Mr. Paanwala is a story about love, family, career, marriage, and finding your true self. It explores the contrast between Lucknow's culture and the London lifestyle. Rooted and authentic, the film features outstanding theatre actors delivering powerful performances."}
+                </p>
+
+                <div className="mt-8">
+                  {film && (
+                    <RentalAccessCard
+                      filmId={film.id}
+                      priceCents={film.price_cents}
+                      currency={film.currency}
+                      rentalWindowHours={film.rental_window_hours}
+                    />
+                  )}
+                </div>
               </div>
-            )}
+
+              <div className="rounded-2xl overflow-hidden bg-muted">
+                <img
+                  src={poster}
+                  alt="Mr. Paanwala poster"
+                  loading="lazy"
+                  className="w-full h-full object-cover aspect-[3/4]"
+                />
+              </div>
+            </div>
           </div>
         </section>
 
-        {/* Synopsis */}
-        {film?.synopsis && (
-          <section className="container max-w-2xl pb-24">
-            <p className="text-lg leading-relaxed text-foreground/90 text-balance">
-              {film.synopsis}
-            </p>
-          </section>
-        )}
-
-        {/* FAQ */}
-        <section className="container max-w-2xl pb-24">
-          <h2 className="font-display text-3xl font-semibold mb-8 display-tracking">
-            How rentals work
-          </h2>
-          <Accordion type="single" collapsible className="border-t border-border">
-            <AccordionItem value="window">
-              <AccordionTrigger>How long do I have to watch?</AccordionTrigger>
-              <AccordionContent className="text-muted-foreground">
-                Your rental window opens the moment you complete payment and stays open for{" "}
-                {film?.rental_window_hours ?? 72} hours. Watch as many times as you want during
-                that period.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="devices">
-              <AccordionTrigger>What devices can I watch on?</AccordionTrigger>
-              <AccordionContent className="text-muted-foreground">
-                Any modern browser on desktop, tablet, or phone. Adaptive streaming adjusts
-                quality automatically based on your connection.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="account">
-              <AccordionTrigger>Do I need an account?</AccordionTrigger>
-              <AccordionContent className="text-muted-foreground">
-                Yes. We attach the rental to your account so you can come back and watch from
-                any device during your window.{" "}
-                <Link to="/signup" className="text-primary hover:underline">
-                  Create one in 30 seconds.
-                </Link>
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="support">
-              <AccordionTrigger>Something's not working — who do I contact?</AccordionTrigger>
-              <AccordionContent className="text-muted-foreground">
-                Email the team at hello@indiereel.example and we'll sort it out. Your rental
-                window will be extended if there's a playback issue.
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </section>
+        <NewsletterCard />
       </main>
 
       <SiteFooter />
