@@ -16,12 +16,34 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const from = params.get("from") || "/library";
+  const from = params.get("from") || "/";
+  const intent = params.get("intent");
+  const filmId = params.get("film");
+
+  const handlePostAuth = async () => {
+    // If user came in to rent a film, kick off Stripe checkout right away.
+    if (intent === "rent" && filmId) {
+      try {
+        const { data, error } = await supabase.functions.invoke("create-checkout", {
+          body: { filmId },
+        });
+        if (error) throw error;
+        if (!data?.url) throw new Error("No checkout URL returned");
+        window.location.href = data.url;
+        return;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Could not start checkout";
+        toast({ title: "Checkout error", description: message, variant: "destructive" });
+      }
+    }
+    navigate(from, { replace: true });
+  };
 
   useEffect(() => {
-    document.title = "Sign in — Indie Reel";
-    if (user) navigate(from, { replace: true });
-  }, [user, from, navigate]);
+    document.title = "Sign in — Rock On Motion Pictures";
+    if (user) handlePostAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +54,7 @@ export default function Login() {
       toast({ title: "Sign in failed", description: error.message, variant: "destructive" });
       return;
     }
-    navigate(from, { replace: true });
+    await handlePostAuth();
   };
 
   return (
