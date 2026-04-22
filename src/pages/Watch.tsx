@@ -53,14 +53,22 @@ function formatRemaining(expiresAt: string): string {
 }
 
 function attachHls(video: HTMLVideoElement, src: string): Hls | null {
+  // CRITICAL: On Safari (iOS, iPadOS, macOS) we MUST use native HLS, not hls.js.
+  // hls.js uses MediaSource Extensions, and AirPlay cannot stream MSE-backed
+  // video to an Apple TV reliably (audio-only playback, spinner, or screen
+  // mirroring fallback are all symptoms of this). Native HLS lets AirPlay hand
+  // the original m3u8 URL to the receiver, which plays cleanly with the screen
+  // off.
+  const canNativeHls = video.canPlayType("application/vnd.apple.mpegurl") !== "";
+  if (canNativeHls) {
+    video.src = src;
+    return null;
+  }
   if (Hls.isSupported()) {
     const hls = new Hls({ maxBufferLength: 30 });
     hls.loadSource(src);
     hls.attachMedia(video);
     return hls;
-  }
-  if (video.canPlayType("application/vnd.apple.mpegurl")) {
-    video.src = src;
   }
   return null;
 }
