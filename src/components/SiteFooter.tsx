@@ -9,7 +9,7 @@ export function SiteFooter() {
         <div className="flex items-center gap-4">
           <Link to="/privacy" className="hover:text-white transition">Privacy Policy</Link>
           <a
-            href="https://facebook.com"
+            href="https://www.facebook.com/rockonmotionpictures"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Facebook"
