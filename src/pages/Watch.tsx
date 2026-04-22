@@ -570,11 +570,15 @@ export default function Watch() {
                   variant="outline"
                   size="sm"
                   onClick={handleCastClick}
-                  title="Cast to a device on your network"
-                  className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
+                  title={isCasting ? "Stop casting" : "Cast to a device on your network"}
+                  className={
+                    isCasting
+                      ? "bg-primary/90 border-primary/40 text-primary-foreground hover:bg-primary"
+                      : "bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
+                  }
                 >
                   <Cast className="h-4 w-4 mr-2" />
-                  Cast
+                  {isCasting ? "Stop casting" : "Cast"}
                 </Button>
               ) : null}
               <Badge className="bg-white/10 text-white border-white/20 hover:bg-white/15">
