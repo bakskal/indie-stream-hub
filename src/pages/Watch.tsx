@@ -378,10 +378,17 @@ export default function Watch() {
           media: {
             MediaInfo: new (url: string, contentType: string) => {
               metadata?: unknown;
+              hlsSegmentFormat?: string;
+              hlsVideoSegmentFormat?: string;
+              streamType?: string;
             };
-            GenericMediaMetadata: new () => { title?: string };
-            LoadRequest: new (info: unknown) => { currentTime?: number };
+            GenericMediaMetadata: new () => { title?: string; images?: unknown[] };
+            LoadRequest: new (info: unknown) => { currentTime?: number; autoplay?: boolean };
+            StreamType: { BUFFERED: string };
+            HlsSegmentFormat?: { FMP4: string; TS: string };
+            HlsVideoSegmentFormat?: { FMP4: string; TS: string };
           };
+          Image: new (url: string) => unknown;
         };
       };
     };
@@ -398,14 +405,28 @@ export default function Watch() {
 
       const mediaInfo = new w.chrome.cast.media.MediaInfo(
         playback.playback.hls,
-        "application/vnd.apple.mpegurl",
+        "application/x-mpegurl",
       );
+      mediaInfo.streamType = w.chrome.cast.media.StreamType.BUFFERED;
+      // Cloudflare Stream serves HLS with fragmented MP4 segments.
+      // Without this hint the receiver falls back to a TS demuxer which
+      // can decode the audio track but drops the video — the exact
+      // "audio only on Chromecast" symptom.
+      const fmp4 = w.chrome.cast.media.HlsSegmentFormat?.FMP4 ?? "fmp4";
+      const fmp4v = w.chrome.cast.media.HlsVideoSegmentFormat?.FMP4 ?? "fmp4";
+      mediaInfo.hlsSegmentFormat = fmp4;
+      mediaInfo.hlsVideoSegmentFormat = fmp4v;
+
       const meta = new w.chrome.cast.media.GenericMediaMetadata();
       meta.title = playback.title;
+      if (playback.playback.poster) {
+        meta.images = [new w.chrome.cast.Image(playback.playback.poster)];
+      }
       mediaInfo.metadata = meta;
 
       const req = new w.chrome.cast.media.LoadRequest(mediaInfo);
       req.currentTime = videoRef.current ? Math.floor(videoRef.current.currentTime) : 0;
+      req.autoplay = true;
 
       // Pause local playback while casting
       videoRef.current?.pause();
