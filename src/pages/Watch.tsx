@@ -1,11 +1,24 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Hls from "hls.js";
-import { Cast } from "lucide-react";
+import { Cast, AirplayIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
+function detectPlatform() {
+  if (typeof navigator === "undefined") {
+    return { isIOS: false, isAndroid: false, isMobile: false };
+  }
+  const ua = navigator.userAgent || "";
+  const isIPadOS =
+    /Macintosh/.test(ua) && typeof document !== "undefined" && "ontouchend" in document;
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || isIPadOS;
+  const isAndroid = /Android/.test(ua);
+  return { isIOS, isAndroid, isMobile: isIOS || isAndroid };
+}
 
 interface PlaybackResponse {
   title: string;
