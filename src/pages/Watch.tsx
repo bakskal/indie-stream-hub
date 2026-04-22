@@ -433,11 +433,7 @@ export default function Watch() {
                   playsInline
                   poster={phase === "feature" ? playback.playback.poster : undefined}
                   controlsList="nodownload"
-                  // Safari AirPlay
-                  // @ts-expect-error — non-standard attributes
-                  ["x-webkit-airplay"]="allow"
-                  // @ts-expect-error — non-standard attributes
-                  disableRemotePlayback={false}
+                  {...({ "x-webkit-airplay": "allow" } as Record<string, string>)}
                 />
                 {phase === "intro" ? (
                   <div className="absolute top-3 left-3 text-xs uppercase tracking-wider text-white/80 bg-black/40 backdrop-blur px-2 py-1 rounded">
